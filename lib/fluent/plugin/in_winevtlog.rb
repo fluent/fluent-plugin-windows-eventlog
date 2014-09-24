@@ -4,7 +4,6 @@ include Win32
 
 module Fluent
   class WinEvtLog < Fluent::Input
-    # Your code goes here...
     Fluent::Plugin.register_input('winevtlog', self)
 
     @@KEY_MAP = {"record_number" => :record_number, 
@@ -129,7 +128,6 @@ module Fluent
         @cat = cat
         @pe = pe || MemoryPositionEntry.new
         @receive_lines = receive_lines
-
         @timer_trigger = TimerWatcher.new(1, true, &method(:on_notify))
       end
 
@@ -154,15 +152,12 @@ module Fluent
         el = EventLog.open(@cat)
         rl_sn = [el.oldest_record_number, el.total_records]
         pe_sn = [@pe.read_start, @pe.read_num]
-
         # if total_records is zero, oldest_record_number has no meaning.
         if rl_sn[1] == 0
-          p "[#{@cat}] total_records is zero, (oldest=#{el.oldest_record_number})"
           return
         end
         
         if pe_sn[0] == 0 && pe_sn[1] == 0
-          p "[#{@cat}] this is a first time or no evetlog.pe_sn=(#{pe_sn[0]},#{pe_sn[1]})"
           @pe.update(rl_sn[0], rl_sn[1])
           return
         end
@@ -170,17 +165,13 @@ module Fluent
         cur_end = rl_sn[0] + rl_sn[1] -1
         old_end = pe_sn[0] + pe_sn[1] -1
 
-        p "[#{@cat}] check cur_end=#{cur_end},old_end=#{old_end}"
-
         if (rl_sn[0] < pe_sn[0])
           # may be a record number rotated.
-          p "we get rl_sn[0] < pe_sn[0], (#{rl_sn[0]}, #{pe_sn[0]})"
           cur_end += 0xFFFFFFFF
         end
 
         if (cur_end <= old_end)
           # something occured.
-          p "[#{@cat}] <#{old_end}> -> <#{cur_end}>"
           @pe.update(rl_sn[0], rl_sn[1])
           return
         end
@@ -213,8 +204,6 @@ module Fluent
       end
     end
 
-    # cat\tpos\n
-    # ...
     class PositionFile
       def initialize(file, map, last_pos)
         @file = file
