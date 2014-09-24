@@ -5,6 +5,7 @@
 /coverage/
 /doc/
 /spec/reports/
+/pkg/
 /tmp/
 *.bundle
 *.so
