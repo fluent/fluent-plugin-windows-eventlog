@@ -20,26 +20,26 @@ module Fluent
     config_param :tag, :string
     config_param :read_interval, :time, :default => 2
     config_param :pos_file, :string, :default => nil
-    config_param :category, :string, :default => 'Application' 
-    config_param :keys, :string, :default => ''
+    config_param :channel, :string, :default => 'Application' 
+    config_param :key, :string, :default => ''
     config_param :read_from_head, :bool, :default => false
 
-    attr_reader :cats
+    attr_reader :chs
 
     def initialize
       super
-      @cats = []
+      @chs = []
       @keynames = []
       @tails = {}
     end
 
     def configure(conf)
       super
-      @cats = @category.split(',').map {|cat| cat.strip }.uniq
-      if @cats.empty?
-        raise ConfigError, "winevtlog: 'category' parameter is required on winevtlog input"
+      @chs = @channel.split(',').map {|ch| ch.strip.downcase }.uniq
+      if @chs.empty?
+        raise ConfigError, "winevtlog: 'channel' parameter is required on winevtlog input"
       end
-      @keynames = @keys.split(',').map {|k| k.strip }.uniq
+      @keynames = @key.split(',').map {|k| k.strip }.uniq
       if @keynames.empty?
         @keynames = @@KEY_MAP.keys
       end
@@ -54,7 +54,7 @@ module Fluent
         @pf = PositionFile.parse(@pf_file)
       end
       @loop = Coolio::Loop.new
-      start_watchers(@cats)
+      start_watchers(@chs)
       @thread = Thread.new(&method(:run))
     end
 
@@ -65,30 +65,30 @@ module Fluent
       @pf_file.close if @pf_file
     end
 
-    def setup_wacther(cat, pe)
-      wlw = WindowsLogWatcher.new(cat, pe, &method(:receive_lines))
+    def setup_wacther(ch, pe)
+      wlw = WindowsLogWatcher.new(ch, pe, &method(:receive_lines))
       wlw.attach(@loop)
       wlw
     end
 
-    def start_watchers(cats)
-      cats.each { |cat|
+    def start_watchers(chs)
+      chs.each { |ch|
         pe = nil
         if @pf
-          pe = @pf[cat]
+          pe = @pf[ch]
           if @read_from_head && pe.read_num.zero?
-            el = EventLog.open(cat)
+            el = EventLog.open(ch)
             pe.update(el.oldest_record_number-1,1)
             el.close
           end
         end
-        @tails[cat] = setup_wacther(cat, pe)
+        @tails[ch] = setup_wacther(ch, pe)
       }
     end
 
-    def stop_watchers(cats, unwatched = false)
-      cats.each { |cat|
-        wlw = @tails.delete(cat)
+    def stop_watchers(chs, unwatched = false)
+      chs.each { |ch|
+        wlw = @tails.delete(ch)
         if wlw
           wlw.unwatched = unwatched
           close_watcher(wlw)
@@ -108,11 +108,13 @@ module Fluent
       $log.error_backtrace
     end
 
-    def receive_lines(lines, pe)
+    def receive_lines(ch, lines, pe)
       return if lines.empty?
       begin
         for r in lines
-          h = Hash[@keynames.map {|k| [k, r.send(@@KEY_MAP[k])]}]
+          h = {"channel" => ch}
+          @keynames.each {|k| h[k]=r.send(@@KEY_MAP[k]).to_s}
+          #h = Hash[@keynames.map {|k| [k, r.send(@@KEY_MAP[k]).to_s]}]
           Engine.emit(@tag, Engine.now, h)
           pe[1] +=1
         end
@@ -124,14 +126,14 @@ module Fluent
 
 
     class WindowsLogWatcher
-      def initialize(cat, pe, &receive_lines)
-        @cat = cat
+      def initialize(ch, pe, &receive_lines)
+        @ch = ch
         @pe = pe || MemoryPositionEntry.new
         @receive_lines = receive_lines
         @timer_trigger = TimerWatcher.new(1, true, &method(:on_notify))
       end
 
-      attr_reader   :cat
+      attr_reader   :ch
       attr_accessor :unwatched
       attr_accessor :pe
 
@@ -149,7 +151,7 @@ module Fluent
       end
 
       def on_notify
-        el = EventLog.open(@cat)
+        el = EventLog.open(@ch)
         rl_sn = [el.oldest_record_number, el.total_records]
         pe_sn = [@pe.read_start, @pe.read_num]
         # if total_records is zero, oldest_record_number has no meaning.
@@ -170,7 +172,7 @@ module Fluent
           cur_end += 0xFFFFFFFF
         end
 
-        if (cur_end <= old_end)
+        if (cur_end < old_end)
           # something occured.
           @pe.update(rl_sn[0], rl_sn[1])
           return
@@ -179,8 +181,10 @@ module Fluent
         read_more = false
         begin
           numlines = cur_end - old_end
+
           winlogs = el.read(Windows::Constants::EVENTLOG_SEEK_READ | Windows::Constants::EVENTLOG_FORWARDS_READ, old_end + 1)
-          @receive_lines.call(winlogs, pe_sn)
+          @receive_lines.call(@ch, winlogs, pe_sn)
+
           @pe.update(pe_sn[0], pe_sn[1])
           old_end = pe_sn[0] + pe_sn[1] -1
         end while read_more
@@ -211,17 +215,17 @@ module Fluent
         @last_pos = last_pos
       end
 
-      def [](cat)
-        if m = @map[cat]
+      def [](ch)
+        if m = @map[ch]
           return m
         end
         @file.pos = @last_pos
-        @file.write cat
+        @file.write ch
         @file.write "\t"
         seek = @file.pos
         @file.write "00000000\t00000000\n"
         @last_pos = @file.pos
-        @map[cat] = FilePositionEntry.new(@file, seek)
+        @map[ch] = FilePositionEntry.new(@file, seek)
       end
 
       # parsing file and rebuild mysself
@@ -232,10 +236,10 @@ module Fluent
           # check and get a matched line as m
           m = /^([^\t]+)\t([0-9a-fA-F]+)\t([0-9a-fA-F]+)/.match(line)
           next unless m
-          cat = m[1] 
+          ch = m[1] 
           pos = m[2].to_i(16)
-          seek = file.pos - line.bytesize + cat.bytesize + 1
-          map[cat] = FilePositionEntry.new(file, seek)
+          seek = file.pos - line.bytesize + ch.bytesize + 1
+          map[ch] = FilePositionEntry.new(file, seek)
         }
         new(file, map, file.pos)
       end
