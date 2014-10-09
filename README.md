@@ -5,9 +5,10 @@
 #### fluentd Input plugin for Windows Event Log
 
 [Fluentd](http://fluentd.org) plugin to read Windows Event Log.
-You must use fluentd 'Windows' brach to use this, and this doesn't work on Linux of course.
-.
+You must use fluentd 'Windows' brach to use me, and it doesn't work on Linux of course.
 
+## Installation
+    gem install fluent-plugin-winevtlog
 
 ## Configuration
 #### fluentd Input plugin for Windows Event Log 
@@ -45,13 +46,13 @@ This plugin reads follows from Windws Event Log. No customization is allowed cur
 |computer_name  |
 |user   |
 |description   |
-.
+
 
 
 ## Etc.
 'read_from_head' is not supporeted currently.You can read newer records after you start first.
 No customize to read information keys.
-.
+
 
 
 
@@ -60,4 +61,4 @@ No customize to read information keys.
 Copyright(C) 2014- @okahashi117
 ####License
 Apache License, Version 2.0
-.
+
