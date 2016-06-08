@@ -49,7 +49,7 @@ module Fluent
 
     def start
       if @pos_file
-        @pf_file = File.open(@pos_file, File::RDWR|File::CREAT|File::BINARY, DEFAULT_FILE_PERMISSION)
+        @pf_file = File.open(@pos_file, File::RDWR|File::CREAT|File::BINARY)
         @pf_file.sync = true
         @pf = PositionFile.parse(@pf_file)
       end
@@ -115,7 +115,7 @@ module Fluent
           h = {"channel" => ch}
           @keynames.each {|k| h[k]=r.send(@@KEY_MAP[k]).to_s}
           #h = Hash[@keynames.map {|k| [k, r.send(@@KEY_MAP[k]).to_s]}]
-          Engine.emit(@tag, Engine.now, h)
+          router.emit(@tag, Engine.now, h)
           pe[1] +=1
         end
       rescue
