@@ -1,9 +1,12 @@
 
 require 'win32/eventlog'
+require 'fluent/input'
+require 'fluent/plugin'
+
 include Win32
 
 module Fluent
-  class WinEvtLog < Fluent::Input
+  class WinEvtLog < Input
     Fluent::Plugin.register_input('winevtlog', self)
 
     @@KEY_MAP = {"record_number" => :record_number, 
@@ -48,6 +51,7 @@ module Fluent
     end
 
     def start
+      super
       if @pos_file
         @pf_file = File.open(@pos_file, File::RDWR|File::CREAT|File::BINARY)
         @pf_file.sync = true
@@ -66,7 +70,7 @@ module Fluent
     end
 
     def setup_wacther(ch, pe)
-      wlw = WindowsLogWatcher.new(ch, pe, &method(:receive_lines))
+      wlw = WindowsLogWatcher.new(@read_interval, ch, pe, &method(:receive_lines))
       wlw.attach(@loop)
       wlw
     end
@@ -126,11 +130,11 @@ module Fluent
 
 
     class WindowsLogWatcher
-      def initialize(ch, pe, &receive_lines)
+      def initialize(interval, ch, pe, &receive_lines)
         @ch = ch
         @pe = pe || MemoryPositionEntry.new
         @receive_lines = receive_lines
-        @timer_trigger = TimerWatcher.new(1, true, &method(:on_notify))
+        @timer_trigger = TimerWatcher.new(interval, true, &method(:on_notify))
       end
 
       attr_reader   :ch
@@ -182,7 +186,7 @@ module Fluent
         begin
           numlines = cur_end - old_end
 
-          winlogs = el.read(Windows::Constants::EVENTLOG_SEEK_READ | Windows::Constants::EVENTLOG_FORWARDS_READ, old_end + 1)
+          winlogs = el.read(Win32::EventLog::SEEK_READ | Win32::EventLog::FORWARDS_READ, old_end + 1)
           @receive_lines.call(@ch, winlogs, pe_sn)
 
           @pe.update(pe_sn[0], pe_sn[1])
