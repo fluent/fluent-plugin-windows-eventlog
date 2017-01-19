@@ -3,7 +3,7 @@ lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
-  spec.name          = "fluent-plugin-winevtlog"
+  spec.name          = "fluent-plugin-windows-eventlog"
   spec.version       = "0.0.4"
   spec.authors       = ["okahashi117"]
   spec.email         = ["naruki_okahashi@jbat.co.jp"]
