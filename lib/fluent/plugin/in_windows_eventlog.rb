@@ -6,7 +6,7 @@ module Fluent::Plugin
   class WindowsEventLogInput < Input
     Fluent::Plugin.register_input('windows_eventlog', self)
 
-    helpers :event_loop
+    helpers :timer
 
     @@KEY_MAP = {"record_number" => :record_number,
                  "time_generated" => :time_generated,
@@ -66,8 +66,10 @@ module Fluent::Plugin
     end
 
     def setup_wacther(ch, pe)
-      wlw = WindowsLogWatcher.new(@read_interval, ch, pe, &method(:receive_lines))
-      event_loop_attach(wlw)
+      wlw = WindowsLogWatcher.new(ch, pe, &method(:receive_lines))
+      wlw.attach do |watcher|
+        wlw.timer_trigger = timer_execute(:in_winevtlog, @read_interval, &watcher.method(:on_notify))
+      end
       wlw
     end
 
@@ -119,19 +121,20 @@ module Fluent::Plugin
 
 
     class WindowsLogWatcher
-      def initialize(interval, ch, pe, &receive_lines)
+      def initialize(ch, pe, &receive_lines)
         @ch = ch
         @pe = pe || MemoryPositionEntry.new
         @receive_lines = receive_lines
-        @timer_trigger = TimerWatcher.new(interval, true, &method(:on_notify))
+        @timer_trigger = nil
       end
 
       attr_reader   :ch
       attr_accessor :unwatched
       attr_accessor :pe
+      attr_accessor :timer_trigger
 
-      def attach(loop)
-        @timer_trigger.attach(loop)
+      def attach
+        yield self
         on_notify
       end
 
@@ -182,22 +185,6 @@ module Fluent::Plugin
           old_end = pe_sn[0] + pe_sn[1] -1
         end while read_more
         el.close
-
-      end
-
-      class TimerWatcher < Coolio::TimerWatcher
-        def initialize(interval, repeat, &callback)
-          @callback = callback
-          super(interval, repeat)
-        end
-
-        def on_timer
-          @callback.call
-        rescue
-          # TODO log?
-          $log.error $!.to_s
-          $log.error_backtrace
-        end
       end
     end
 
