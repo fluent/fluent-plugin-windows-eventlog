@@ -22,7 +22,8 @@ unless ENV.has_key?('VERBOSE')
   $log = nulllogger
 end
 
-require 'fluent/plugin/in_winevtlog'
+require 'fluent/test/driver/input'
+require 'fluent/plugin/in_windows_eventlog'
 
 class Test::Unit::TestCase
 end

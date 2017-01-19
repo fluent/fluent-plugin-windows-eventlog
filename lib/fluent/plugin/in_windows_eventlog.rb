@@ -1,29 +1,28 @@
-
 require 'win32/eventlog'
-require 'fluent/input'
+require 'fluent/plugin/input'
 require 'fluent/plugin'
 
-include Win32
-
-module Fluent
+module Fluent::Plugin
   class WindowsEventLogInput < Input
     Fluent::Plugin.register_input('windows_eventlog', self)
 
-    @@KEY_MAP = {"record_number" => :record_number, 
-                    "time_generated" => :time_generated, 
-                    "time_written" => :time_written, 
-                    "event_id" => :event_id, 
-                    "event_type" => :event_type, 
-                    "event_category" => :category, 
-                    "source_name" => :source, 
-                    "computer_name" => :computer, 
-                    "user" => :user, 
-                    "description" => :description}
+    helpers :event_loop
+
+    @@KEY_MAP = {"record_number" => :record_number,
+                 "time_generated" => :time_generated,
+                 "time_written" => :time_written,
+                 "event_id" => :event_id,
+                 "event_type" => :event_type,
+                 "event_category" => :category,
+                 "source_name" => :source,
+                 "computer_name" => :computer,
+                 "user" => :user,
+                 "description" => :description}
 
     config_param :tag, :string
     config_param :read_interval, :time, :default => 2
     config_param :pos_file, :string, :default => nil
-    config_param :channel, :string, :default => 'Application' 
+    config_param :channel, :string, :default => 'Application'
     config_param :key, :string, :default => ''
     config_param :read_from_head, :bool, :default => false
 
@@ -40,7 +39,7 @@ module Fluent
       super
       @chs = @channel.split(',').map {|ch| ch.strip.downcase }.uniq
       if @chs.empty?
-        raise ConfigError, "winevtlog: 'channel' parameter is required on winevtlog input"
+        raise Fluent::ConfigError, "winevtlog: 'channel' parameter is required on winevtlog input"
       end
       @keynames = @key.split(',').map {|k| k.strip }.uniq
       if @keynames.empty?
@@ -57,21 +56,18 @@ module Fluent
         @pf_file.sync = true
         @pf = PositionFile.parse(@pf_file)
       end
-      @loop = Coolio::Loop.new
       start_watchers(@chs)
-      @thread = Thread.new(&method(:run))
     end
 
     def shutdown
       stop_watchers(@tails.keys, true)
-      @loop.stop rescue nil
-      @thread.join
       @pf_file.close if @pf_file
+      super
     end
 
     def setup_wacther(ch, pe)
       wlw = WindowsLogWatcher.new(@read_interval, ch, pe, &method(:receive_lines))
-      wlw.attach(@loop)
+      event_loop_attach(wlw)
       wlw
     end
 
@@ -81,7 +77,7 @@ module Fluent
         if @pf
           pe = @pf[ch]
           if @read_from_head && pe.read_num.zero?
-            el = EventLog.open(ch)
+            el = Win32::EventLog.open(ch)
             pe.update(el.oldest_record_number-1,1)
             el.close
           end
@@ -105,13 +101,6 @@ module Fluent
       # flush_buffer(wlw)
     end
 
-    def run
-      @loop.run
-    rescue
-      $log.error "unexpected error", :error=>$!.to_s
-      $log.error_backtrace
-    end
-
     def receive_lines(ch, lines, pe)
       return if lines.empty?
       begin
@@ -119,7 +108,7 @@ module Fluent
           h = {"channel" => ch}
           @keynames.each {|k| h[k]=r.send(@@KEY_MAP[k]).to_s}
           #h = Hash[@keynames.map {|k| [k, r.send(@@KEY_MAP[k]).to_s]}]
-          router.emit(@tag, Engine.now, h)
+          router.emit(@tag, Fluent::Engine.now, h)
           pe[1] +=1
         end
       rescue
@@ -155,14 +144,14 @@ module Fluent
       end
 
       def on_notify
-        el = EventLog.open(@ch)
+        el = Win32::EventLog.open(@ch)
         rl_sn = [el.oldest_record_number, el.total_records]
         pe_sn = [@pe.read_start, @pe.read_num]
         # if total_records is zero, oldest_record_number has no meaning.
         if rl_sn[1] == 0
           return
         end
-        
+
         if pe_sn[0] == 0 && pe_sn[1] == 0
           @pe.update(rl_sn[0], rl_sn[1])
           return
@@ -193,7 +182,7 @@ module Fluent
           old_end = pe_sn[0] + pe_sn[1] -1
         end while read_more
         el.close
-        
+
       end
 
       class TimerWatcher < Coolio::TimerWatcher
@@ -240,7 +229,7 @@ module Fluent
           # check and get a matched line as m
           m = /^([^\t]+)\t([0-9a-fA-F]+)\t([0-9a-fA-F]+)/.match(line)
           next unless m
-          ch = m[1] 
+          ch = m[1]
           pos = m[2].to_i(16)
           seek = file.pos - line.bytesize + ch.bytesize + 1
           map[ch] = FilePositionEntry.new(file, seek)
@@ -265,7 +254,7 @@ module Fluent
         @file.pos = @seek
         @file.write "%08x\t%08x" % [start, num]
       end
-      
+
       def read_start
         @file.pos = @seek
         raw = @file.read(START_SIZE)
@@ -289,7 +278,7 @@ module Fluent
         @start = start
         @num = num
       end
-      
+
       def read_start
         @start
       end

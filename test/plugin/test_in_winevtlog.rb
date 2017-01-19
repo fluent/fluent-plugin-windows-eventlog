@@ -1,31 +1,26 @@
 require 'helper'
 
-class WinEvtLogTest < Test::Unit::TestCase
+class WindowsEventLogInputTest < Test::Unit::TestCase
   def setup
     Fluent::Test.setup
   end
 
   CONFIG = %[
+    tag fluent.eventlog
   ]
-  # CONFIG = %[
-  #   path #{TMP_DIR}/out_file_test
-  #   compress gz
-  #   utc
-  # ]
 
-  def create_driver(conf = CONFIG, tag='test')
-    Fluent::Test::InputTestDriver.new(Fluent::WinEvtLog).configure(conf)
+  def create_driver(conf = CONFIG)
+    Fluent::Test::Driver::Input.new(Fluent::Plugin::WindowsEventLogInput).configure(conf)
   end
 
   def test_configure
-    #### set configurations
-    # d = create_driver %[
-    #   path test_path
-    #   compress gz
-    # ]
-    #### check configurations
-    # assert_equal 'test_path', d.instance.path
-    # assert_equal :gz, d.instance.compress
+    d = create_driver CONFIG
+    assert_equal 'fluent.eventlog', d.instance.tag
+    assert_equal 2, d.instance.read_interval
+    assert_nil d.instance.pos_file
+    assert_equal 'Application', d.instance.channel
+    assert_true d.instance.key.empty?
+    assert_false d.instance.read_from_head
   end
 
   def test_format
