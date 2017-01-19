@@ -1,4 +1,4 @@
-# fluent-plugin-winevtlog
+# fluent-plugin-windows-eventlog
 
 ## Component
 
@@ -8,13 +8,13 @@
 You must use fluentd 'Windows' brach to use me, and it doesn't work on Linux of course.
 
 ## Installation
-    gem install fluent-plugin-winevtlog
+    gem install fluent-plugin-windows-eventlog
 
 ## Configuration
 #### fluentd Input plugin for Windows Event Log 
 
     <source>
-      type winevtlog
+      type windows_eventlog
       channel application,system
       pos_file c:\temp\mypos
       read_interval 2

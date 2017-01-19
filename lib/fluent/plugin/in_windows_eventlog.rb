@@ -6,8 +6,8 @@ require 'fluent/plugin'
 include Win32
 
 module Fluent
-  class WinEvtLog < Input
-    Fluent::Plugin.register_input('winevtlog', self)
+  class WindowsEventLogInput < Input
+    Fluent::Plugin.register_input('windows_eventlog', self)
 
     @@KEY_MAP = {"record_number" => :record_number, 
                     "time_generated" => :time_generated, 
