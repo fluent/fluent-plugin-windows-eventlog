@@ -20,13 +20,13 @@ module Fluent::Plugin
                  "description" => :description}
 
     config_param :tag, :string
-    config_param :read_interval, :time, :default => 2
-    config_param :pos_file, :string, :default => nil
-    config_param :channel, :string, :default => 'Application'
-    config_param :key, :string, :default => ''
-    config_param :read_from_head, :bool, :default => false
-    config_param :from_encoding, :string, :default => nil
-    config_param :encoding, :string, :default => nil
+    config_param :read_interval, :time, default: 2
+    config_param :pos_file, :string, default: nil
+    config_param :channel, :string, default: 'Application'
+    config_param :key, :string, default: ''
+    config_param :read_from_head, :bool, default: false
+    config_param :from_encoding, :string, default: nil
+    config_param :encoding, :string, default: nil
 
     attr_reader :chs
 
@@ -155,7 +155,7 @@ module Fluent::Plugin
           pe[1] +=1
         end
       rescue
-        $log.error "unexpected error", :error=>$!.to_s
+        $log.error "unexpected error", error: $!.to_s
         $log.error_backtrace
       end
     end
