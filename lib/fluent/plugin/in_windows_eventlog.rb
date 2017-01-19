@@ -25,6 +25,8 @@ module Fluent::Plugin
     config_param :channel, :string, :default => 'Application'
     config_param :key, :string, :default => ''
     config_param :read_from_head, :bool, :default => false
+    config_param :from_encoding, :string, :default => nil
+    config_param :encoding, :string, :default => nil
 
     attr_reader :chs
 
@@ -47,6 +49,45 @@ module Fluent::Plugin
       end
       @tag = tag
       @stop = false
+      configure_encoding
+      @receive_handlers = if @encoding
+                            method(:encode_record)
+                          else
+                            method(:no_encode_record)
+                          end
+    end
+
+    def configure_encoding
+      unless @encoding
+        if @from_encoding
+          raise Fluent::ConfigError, "winevtlog: 'from_encoding' parameter must be specied with 'encoding' parameter."
+        end
+      end
+
+      @encoding = parse_encoding_param(@encoding) if @encoding
+      @from_encoding = parse_encoding_param(@from_encoding) if @from_encoding
+    end
+
+    def parse_encoding_param(encoding_name)
+      begin
+        Encoding.find(encoding_name) if encoding_name
+      rescue ArgumentError => e
+        raise Fluent::ConfigError, e.message
+      end
+    end
+
+    def encode_record(record)
+      if @encoding
+        if @from_encoding
+          record.encode!(@encoding, @from_encoding)
+        else
+          record.force_encoding(@encoding)
+        end
+      end
+    end
+
+    def no_encode_record(record)
+      record
     end
 
     def start
@@ -108,7 +149,7 @@ module Fluent::Plugin
       begin
         for r in lines
           h = {"channel" => ch}
-          @keynames.each {|k| h[k]=r.send(@@KEY_MAP[k]).to_s}
+          @keynames.each {|k| h[k]=@receive_handlers.call(r.send(@@KEY_MAP[k]).to_s)}
           #h = Hash[@keynames.map {|k| [k, r.send(@@KEY_MAP[k]).to_s]}]
           router.emit(@tag, Fluent::Engine.now, h)
           pe[1] +=1
