@@ -8,7 +8,7 @@ module Fluent::Plugin
 
     helpers :timer
 
-    @@KEY_MAP = {"record_number" => :record_number,
+    KEY_MAP = {"record_number" => :record_number,
                  "time_generated" => :time_generated,
                  "time_written" => :time_written,
                  "event_id" => :event_id,
@@ -45,7 +45,7 @@ module Fluent::Plugin
       end
       @keynames = @key.split(',').map {|k| k.strip }.uniq
       if @keynames.empty?
-        @keynames = @@KEY_MAP.keys
+        @keynames = KEY_MAP.keys
       end
       @tag = tag
       @stop = false
@@ -149,8 +149,8 @@ module Fluent::Plugin
       begin
         for r in lines
           h = {"channel" => ch}
-          @keynames.each {|k| h[k]=@receive_handlers.call(r.send(@@KEY_MAP[k]).to_s)}
-          #h = Hash[@keynames.map {|k| [k, r.send(@@KEY_MAP[k]).to_s]}]
+          @keynames.each {|k| h[k]=@receive_handlers.call(r.send(KEY_MAP[k]).to_s)}
+          #h = Hash[@keynames.map {|k| [k, r.send(KEY_MAP[k]).to_s]}]
           router.emit(@tag, Fluent::Engine.now, h)
           pe[1] +=1
         end
