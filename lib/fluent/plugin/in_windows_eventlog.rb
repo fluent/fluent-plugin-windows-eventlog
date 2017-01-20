@@ -41,7 +41,7 @@ module Fluent::Plugin
       super
       @chs = @channels.map {|ch| ch.strip.downcase }.uniq
       if @chs.empty?
-        raise Fluent::ConfigError, "winevtlog: 'channels' parameter is required on winevtlog input"
+        raise Fluent::ConfigError, "windows_eventlog: 'channels' parameter is required on windows_eventlog input"
       end
       @keynames = @keys.map {|k| k.strip }.uniq
       if @keynames.empty?
@@ -60,7 +60,7 @@ module Fluent::Plugin
     def configure_encoding
       unless @encoding
         if @from_encoding
-          raise Fluent::ConfigError, "winevtlog: 'from_encoding' parameter must be specied with 'encoding' parameter."
+          raise Fluent::ConfigError, "windows_eventlog: 'from_encoding' parameter must be specied with 'encoding' parameter."
         end
       end
 
