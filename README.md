@@ -15,7 +15,7 @@ You must use fluentd 'Windows' brach to use me, and it doesn't work on Linux of 
 
     <source>
       type windows_eventlog
-      channel application,system
+      channels application,system
       pos_file c:\temp\mypos
       read_interval 2
       tag winevt.raw
@@ -26,7 +26,7 @@ You must use fluentd 'Windows' brach to use me, and it doesn't work on Linux of 
 
 |name      | description |
 |:-----    |:-----       |
-|channel   | (option) 'applicaion' as default. one or combination of {application, system, setup, security}. If you want to read setup or security, administrator priv is required to launch fluentd.  |
+|channels   | (option) 'applicaion' as default. one or combination of {application, system, setup, security}. If you want to read setup or security, administrator priv is required to launch fluentd.  |
 |pos_file  | (option, but higly recommended) a path of position file to save record numbers. |
 |read_interval   | (option) a read interval in second. 2 seconds as default.|
 |from_encoding  | (option) an input characters encoding. nil as default.|

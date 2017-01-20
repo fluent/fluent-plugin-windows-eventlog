@@ -22,8 +22,8 @@ module Fluent::Plugin
     config_param :tag, :string
     config_param :read_interval, :time, default: 2
     config_param :pos_file, :string, default: nil
-    config_param :channel, :string, default: 'Application'
-    config_param :key, :string, default: ''
+    config_param :channels, :array, default: ['Application']
+    config_param :keys, :string, default: []
     config_param :read_from_head, :bool, default: false
     config_param :from_encoding, :string, default: nil
     config_param :encoding, :string, default: nil
@@ -39,11 +39,11 @@ module Fluent::Plugin
 
     def configure(conf)
       super
-      @chs = @channel.split(',').map {|ch| ch.strip.downcase }.uniq
+      @chs = @channels.map {|ch| ch.strip.downcase }.uniq
       if @chs.empty?
-        raise Fluent::ConfigError, "winevtlog: 'channel' parameter is required on winevtlog input"
+        raise Fluent::ConfigError, "winevtlog: 'channels' parameter is required on winevtlog input"
       end
-      @keynames = @key.split(',').map {|k| k.strip }.uniq
+      @keynames = @keys.map {|k| k.strip }.uniq
       if @keynames.empty?
         @keynames = KEY_MAP.keys
       end
