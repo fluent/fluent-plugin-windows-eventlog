@@ -1,31 +1,32 @@
-
 require 'win32/eventlog'
-require 'fluent/input'
+require 'fluent/plugin/input'
 require 'fluent/plugin'
 
-include Win32
-
-module Fluent
+module Fluent::Plugin
   class WindowsEventLogInput < Input
     Fluent::Plugin.register_input('windows_eventlog', self)
 
-    @@KEY_MAP = {"record_number" => :record_number, 
-                    "time_generated" => :time_generated, 
-                    "time_written" => :time_written, 
-                    "event_id" => :event_id, 
-                    "event_type" => :event_type, 
-                    "event_category" => :category, 
-                    "source_name" => :source, 
-                    "computer_name" => :computer, 
-                    "user" => :user, 
-                    "description" => :description}
+    helpers :timer
+
+    KEY_MAP = {"record_number" => :record_number,
+                 "time_generated" => :time_generated,
+                 "time_written" => :time_written,
+                 "event_id" => :event_id,
+                 "event_type" => :event_type,
+                 "event_category" => :category,
+                 "source_name" => :source,
+                 "computer_name" => :computer,
+                 "user" => :user,
+                 "description" => :description}
 
     config_param :tag, :string
-    config_param :read_interval, :time, :default => 2
-    config_param :pos_file, :string, :default => nil
-    config_param :channel, :string, :default => 'Application' 
-    config_param :key, :string, :default => ''
-    config_param :read_from_head, :bool, :default => false
+    config_param :read_interval, :time, default: 2
+    config_param :pos_file, :string, default: nil
+    config_param :channels, :array, default: ['Application']
+    config_param :keys, :string, default: []
+    config_param :read_from_head, :bool, default: false
+    config_param :from_encoding, :string, default: nil
+    config_param :encoding, :string, default: nil
 
     attr_reader :chs
 
@@ -38,16 +39,55 @@ module Fluent
 
     def configure(conf)
       super
-      @chs = @channel.split(',').map {|ch| ch.strip.downcase }.uniq
+      @chs = @channels.map {|ch| ch.strip.downcase }.uniq
       if @chs.empty?
-        raise ConfigError, "winevtlog: 'channel' parameter is required on winevtlog input"
+        raise Fluent::ConfigError, "windows_eventlog: 'channels' parameter is required on windows_eventlog input"
       end
-      @keynames = @key.split(',').map {|k| k.strip }.uniq
+      @keynames = @keys.map {|k| k.strip }.uniq
       if @keynames.empty?
-        @keynames = @@KEY_MAP.keys
+        @keynames = KEY_MAP.keys
       end
       @tag = tag
       @stop = false
+      configure_encoding
+      @receive_handlers = if @encoding
+                            method(:encode_record)
+                          else
+                            method(:no_encode_record)
+                          end
+    end
+
+    def configure_encoding
+      unless @encoding
+        if @from_encoding
+          raise Fluent::ConfigError, "windows_eventlog: 'from_encoding' parameter must be specied with 'encoding' parameter."
+        end
+      end
+
+      @encoding = parse_encoding_param(@encoding) if @encoding
+      @from_encoding = parse_encoding_param(@from_encoding) if @from_encoding
+    end
+
+    def parse_encoding_param(encoding_name)
+      begin
+        Encoding.find(encoding_name) if encoding_name
+      rescue ArgumentError => e
+        raise Fluent::ConfigError, e.message
+      end
+    end
+
+    def encode_record(record)
+      if @encoding
+        if @from_encoding
+          record.encode!(@encoding, @from_encoding)
+        else
+          record.force_encoding(@encoding)
+        end
+      end
+    end
+
+    def no_encode_record(record)
+      record
     end
 
     def start
@@ -57,21 +97,20 @@ module Fluent
         @pf_file.sync = true
         @pf = PositionFile.parse(@pf_file)
       end
-      @loop = Coolio::Loop.new
       start_watchers(@chs)
-      @thread = Thread.new(&method(:run))
     end
 
     def shutdown
       stop_watchers(@tails.keys, true)
-      @loop.stop rescue nil
-      @thread.join
       @pf_file.close if @pf_file
+      super
     end
 
     def setup_wacther(ch, pe)
-      wlw = WindowsLogWatcher.new(@read_interval, ch, pe, &method(:receive_lines))
-      wlw.attach(@loop)
+      wlw = WindowsLogWatcher.new(ch, pe, &method(:receive_lines))
+      wlw.attach do |watcher|
+        wlw.timer_trigger = timer_execute(:in_winevtlog, @read_interval, &watcher.method(:on_notify))
+      end
       wlw
     end
 
@@ -81,7 +120,7 @@ module Fluent
         if @pf
           pe = @pf[ch]
           if @read_from_head && pe.read_num.zero?
-            el = EventLog.open(ch)
+            el = Win32::EventLog.open(ch)
             pe.update(el.oldest_record_number-1,1)
             el.close
           end
@@ -105,44 +144,38 @@ module Fluent
       # flush_buffer(wlw)
     end
 
-    def run
-      @loop.run
-    rescue
-      $log.error "unexpected error", :error=>$!.to_s
-      $log.error_backtrace
-    end
-
     def receive_lines(ch, lines, pe)
       return if lines.empty?
       begin
         for r in lines
           h = {"channel" => ch}
-          @keynames.each {|k| h[k]=r.send(@@KEY_MAP[k]).to_s}
-          #h = Hash[@keynames.map {|k| [k, r.send(@@KEY_MAP[k]).to_s]}]
-          router.emit(@tag, Engine.now, h)
+          @keynames.each {|k| h[k]=@receive_handlers.call(r.send(KEY_MAP[k]).to_s)}
+          #h = Hash[@keynames.map {|k| [k, r.send(KEY_MAP[k]).to_s]}]
+          router.emit(@tag, Fluent::Engine.now, h)
           pe[1] +=1
         end
       rescue
-        $log.error "unexpected error", :error=>$!.to_s
+        $log.error "unexpected error", error: $!.to_s
         $log.error_backtrace
       end
     end
 
 
     class WindowsLogWatcher
-      def initialize(interval, ch, pe, &receive_lines)
+      def initialize(ch, pe, &receive_lines)
         @ch = ch
         @pe = pe || MemoryPositionEntry.new
         @receive_lines = receive_lines
-        @timer_trigger = TimerWatcher.new(interval, true, &method(:on_notify))
+        @timer_trigger = nil
       end
 
       attr_reader   :ch
       attr_accessor :unwatched
       attr_accessor :pe
+      attr_accessor :timer_trigger
 
-      def attach(loop)
-        @timer_trigger.attach(loop)
+      def attach
+        yield self
         on_notify
       end
 
@@ -155,14 +188,14 @@ module Fluent
       end
 
       def on_notify
-        el = EventLog.open(@ch)
+        el = Win32::EventLog.open(@ch)
         rl_sn = [el.oldest_record_number, el.total_records]
         pe_sn = [@pe.read_start, @pe.read_num]
         # if total_records is zero, oldest_record_number has no meaning.
         if rl_sn[1] == 0
           return
         end
-        
+
         if pe_sn[0] == 0 && pe_sn[1] == 0
           @pe.update(rl_sn[0], rl_sn[1])
           return
@@ -193,22 +226,6 @@ module Fluent
           old_end = pe_sn[0] + pe_sn[1] -1
         end while read_more
         el.close
-        
-      end
-
-      class TimerWatcher < Coolio::TimerWatcher
-        def initialize(interval, repeat, &callback)
-          @callback = callback
-          super(interval, repeat)
-        end
-
-        def on_timer
-          @callback.call
-        rescue
-          # TODO log?
-          $log.error $!.to_s
-          $log.error_backtrace
-        end
       end
     end
 
@@ -240,7 +257,7 @@ module Fluent
           # check and get a matched line as m
           m = /^([^\t]+)\t([0-9a-fA-F]+)\t([0-9a-fA-F]+)/.match(line)
           next unless m
-          ch = m[1] 
+          ch = m[1]
           pos = m[2].to_i(16)
           seek = file.pos - line.bytesize + ch.bytesize + 1
           map[ch] = FilePositionEntry.new(file, seek)
@@ -265,7 +282,7 @@ module Fluent
         @file.pos = @seek
         @file.write "%08x\t%08x" % [start, num]
       end
-      
+
       def read_start
         @file.pos = @seek
         raw = @file.read(START_SIZE)
@@ -289,7 +306,7 @@ module Fluent
         @start = start
         @num = num
       end
-      
+
       def read_start
         @start
       end
