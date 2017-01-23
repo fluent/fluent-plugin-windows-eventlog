@@ -6,7 +6,7 @@ Gem::Specification.new do |spec|
   spec.name          = "fluent-plugin-windows-eventlog"
   spec.version       = "0.1.0"
   spec.authors       = ["okahashi117", "Hiroshi Hatake", "Masahiro Nakagawa"]
-  spec.email         = ["naruki_okahashi@jbat.co.jp", "cosmo0920.wp@gmail.com", "repeatedly@gmail.com"]
+  spec.email         = ["naruki_okahashi@jbat.co.jp", "cosmo0920.oucc@gmail.com", "repeatedly@gmail.com"]
   spec.summary       = %q{Fluentd Input plugin to read windows event log.}
   spec.description   = %q{Fluentd Input plugin to read windwos event log.}
   spec.homepage      = "https://github.com/fluent/fluent-plugin-windows-eventlog"
