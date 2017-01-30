@@ -23,12 +23,13 @@ module Fluent::Plugin
     config_param :tag, :string
     config_param :read_interval, :time, default: 2
     config_param :pos_file, :string, default: nil,
-                 obsoleted: "Use <storage> section instead."
+                 obsoleted: "This section is not used anymore. Use 'store_pos' instead."
     config_param :channels, :array, default: ['Application']
     config_param :keys, :string, default: []
     config_param :read_from_head, :bool, default: false
     config_param :from_encoding, :string, default: nil
     config_param :encoding, :string, default: nil
+    config_param :store_pos, :bool, default: false
 
     attr_reader :chs
 
@@ -58,15 +59,17 @@ module Fluent::Plugin
                           else
                             method(:no_encode_record)
                           end
-      @chs.map {|ch|
-        config = Fluent::Config::Element.new('storage',
-                                             "in_windows_eventlog_pos_#{ch.gsub(' ', '_')}", {
+      if @store_pos
+        @chs.map {|ch|
+          config = Fluent::Config::Element.new('storage',
+                                               "in_windows_eventlog_pos_#{ch.gsub(' ', '_')}", {
                                                  "@type" => "local",
                                                  "persistent" => true,
-                                             }, [])
-        @storages[ch] = storage_create(usage: "in_windows_eventlog_pos_#{ch.gsub(' ', '_')}", conf: config,
-                                       default_type: DEFAULT_STORAGE_TYPE)
-      }
+                                               }, [])
+          @storages[ch] = storage_create(usage: "in_windows_eventlog_pos_#{ch.gsub(' ', '_')}", conf: config,
+                                         default_type: DEFAULT_STORAGE_TYPE)
+        }
+      end
     end
 
     def configure_encoding
