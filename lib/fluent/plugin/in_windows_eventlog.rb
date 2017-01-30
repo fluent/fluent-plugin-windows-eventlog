@@ -60,6 +60,9 @@ module Fluent::Plugin
                             method(:no_encode_record)
                           end
       if @store_pos
+        unless system_config.root_dir
+          raise Fluent::ConfigError, "windows_eventlog: 'root_dir' in <system> parameter must be specified with 'store_pos' parameter."
+        end
         @chs.map {|ch|
           config = Fluent::Config::Element.new('storage',
                                                "in_windows_eventlog_pos_#{ch.gsub(' ', '_')}", {
