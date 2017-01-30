@@ -6,8 +6,9 @@ module Fluent::Plugin
   class WindowsEventLogInput < Input
     Fluent::Plugin.register_input('windows_eventlog', self)
 
-    helpers :timer
+    helpers :timer, :storage
 
+    DEFAULT_STORAGE_TYPE = 'local'
     KEY_MAP = {"record_number" => :record_number,
                  "time_generated" => :time_generated,
                  "time_written" => :time_written,
@@ -35,6 +36,7 @@ module Fluent::Plugin
       @chs = []
       @keynames = []
       @tails = {}
+      @storages = {}
     end
 
     def configure(conf)
@@ -55,6 +57,11 @@ module Fluent::Plugin
                           else
                             method(:no_encode_record)
                           end
+      config = conf.elements.select{|e| e.name == 'storage'}.first
+      @chs.map {|ch|
+        @storages[ch] = storage_create(usage: "in_windows_eventlog_pos_#{ch}", conf: config,
+                                       default_type: DEFAULT_STORAGE_TYPE)
+      }
     end
 
     def configure_encoding
@@ -92,17 +99,18 @@ module Fluent::Plugin
 
     def start
       super
-      if @pos_file
-        @pf_file = File.open(@pos_file, File::RDWR|File::CREAT|File::BINARY)
-        @pf_file.sync = true
-        @pf = PositionFile.parse(@pf_file)
+      unless @storages.empty?
+        @pf = {}
+        @storages.each {|storage|
+          ch = storage.first
+          @pf[ch] = PositionFile.parse(storage)
+        }
       end
       start_watchers(@chs)
     end
 
     def shutdown
       stop_watchers(@tails.keys, true)
-      @pf_file.close if @pf_file
       super
     end
 
@@ -230,69 +238,31 @@ module Fluent::Plugin
     end
 
     class PositionFile
-      def initialize(file, map, last_pos)
-        @file = file
-        @map = map
-        @last_pos = last_pos
-      end
-
-      def [](ch)
-        if m = @map[ch]
-          return m
-        end
-        @file.pos = @last_pos
-        @file.write ch
-        @file.write "\t"
-        seek = @file.pos
-        @file.write "00000000\t00000000\n"
-        @last_pos = @file.pos
-        @map[ch] = FilePositionEntry.new(@file, seek)
-      end
-
       # parsing file and rebuild mysself
-      def self.parse(file)
-        map = {}
-        file.pos = 0
-        file.each_line {|line|
-          # check and get a matched line as m
-          m = /^([^\t]+)\t([0-9a-fA-F]+)\t([0-9a-fA-F]+)/.match(line)
-          next unless m
-          ch = m[1]
-          pos = m[2].to_i(16)
-          seek = file.pos - line.bytesize + ch.bytesize + 1
-          map[ch] = FilePositionEntry.new(file, seek)
-        }
-        new(file, map, file.pos)
+      def self.parse(storage)
+        ch = storage.first
+        FilePositionEntry.new(storage)
       end
     end
 
     class FilePositionEntry
-      START_SIZE = 8
-      NUM_OFFSET = 9
-      NUM_SIZE   = 8
-      LN_OFFSET = 17
-      SIZE = 18
-
-      def initialize(file, seek)
-        @file = file
-        @seek = seek
+      def initialize(pos_storage)
+        @file = pos_storage.last
       end
 
       def update(start, num)
-        @file.pos = @seek
-        @file.write "%08x\t%08x" % [start, num]
+        @file.put(:start, "%08x" % start)
+        @file.put(:num, "%08x" % num)
       end
 
       def read_start
-        @file.pos = @seek
-        raw = @file.read(START_SIZE)
-        raw ? raw.to_i(16) : 0
+        raw = @file.get(:start) || 0
+        raw ? raw.to_s.to_i(16) : 0
       end
 
       def read_num
-        @file.pos = @seek + NUM_OFFSET
-        raw = @file.read(NUM_SIZE)
-        raw ? raw.to_i(16) : 0
+        raw = @file.get(:num) || 0
+        raw ? raw.to_s.to_i(16) : 0
       end
     end
 
