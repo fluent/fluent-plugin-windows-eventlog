@@ -22,7 +22,8 @@ module Fluent::Plugin
 
     config_param :tag, :string
     config_param :read_interval, :time, default: 2
-    config_param :pos_file, :string, default: nil
+    config_param :pos_file, :string, default: nil,
+                 obsoleted: "Use <storage> section instead."
     config_param :channels, :array, default: ['Application']
     config_param :keys, :string, default: []
     config_param :read_from_head, :bool, default: false
