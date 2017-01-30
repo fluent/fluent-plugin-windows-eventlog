@@ -58,9 +58,13 @@ module Fluent::Plugin
                           else
                             method(:no_encode_record)
                           end
-      config = conf.elements.select{|e| e.name == 'storage'}.first
       @chs.map {|ch|
-        @storages[ch] = storage_create(usage: "in_windows_eventlog_pos_#{ch}", conf: config,
+        config = Fluent::Config::Element.new('storage',
+                                             "in_windows_eventlog_pos_#{ch.gsub(' ', '_')}", {
+                                                 "@type" => "local",
+                                                 "persistent" => true,
+                                             }, [])
+        @storages[ch] = storage_create(usage: "in_windows_eventlog_pos_#{ch.gsub(' ', '_')}", conf: config,
                                        default_type: DEFAULT_STORAGE_TYPE)
       }
     end
@@ -103,7 +107,7 @@ module Fluent::Plugin
       unless @storages.empty?
         @pf = {}
         @storages.each {|storage|
-          ch = storage.first
+          ch = storage.first.gsub(' ', '_')
           @pf[ch] = PositionFile.parse(storage)
         }
       end
@@ -127,7 +131,7 @@ module Fluent::Plugin
       chs.each { |ch|
         pe = nil
         if @pf
-          pe = @pf[ch]
+          pe = @pf[ch.gsub(' ', '_')]
           if @read_from_head && pe.read_num.zero?
             el = Win32::EventLog.open(ch)
             pe.update(el.oldest_record_number-1,1)
