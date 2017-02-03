@@ -62,11 +62,11 @@ module Fluent::Plugin
       if @store_pos
         @chs.map {|ch|
           config = Fluent::Config::Element.new('storage',
-                                               "in_windows_eventlog_pos_#{ch.gsub(' ', '_')}", {
+                                               "#{ch.gsub(' ', '_')}", {
                                                  "@type" => "local",
                                                  "persistent" => true,
                                                }, [])
-          @storages[ch] = storage_create(usage: "in_windows_eventlog_pos_#{ch.gsub(' ', '_')}", conf: config,
+          @storages[ch] = storage_create(usage: "#{ch.gsub(' ', '_')}", conf: config,
                                          default_type: DEFAULT_STORAGE_TYPE)
         }
       end
