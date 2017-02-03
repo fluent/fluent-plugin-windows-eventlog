@@ -30,6 +30,12 @@ module Fluent::Plugin
     config_param :from_encoding, :string, default: nil
     config_param :encoding, :string, default: nil
 
+    config_section :storage do
+      config_set_default :usage, "positions"
+      config_set_default :@type, DEFAULT_STORAGE_TYPE
+      config_set_default :persistent, true
+    end
+
     attr_reader :chs
 
     def initialize
@@ -58,15 +64,7 @@ module Fluent::Plugin
                           else
                             method(:no_encode_record)
                           end
-      @chs.each {|ch|
-        config = Fluent::Config::Element.new('storage',
-                                             "#{ch.gsub(/[^_a-zA-Z0-9]/, '_')}", {
-                                               "@type" => "local",
-                                               "persistent" => true,
-                                             }, [])
-        @storages[ch] = storage_create(usage: "#{ch.gsub(/[^_a-zA-Z0-9]/, '_')}", conf: config,
-                                       default_type: DEFAULT_STORAGE_TYPE)
-      }
+      @pos_storage = storage_create(usage: "positions")
     end
 
     def configure_encoding
@@ -104,60 +102,24 @@ module Fluent::Plugin
 
     def start
       super
-      unless @storages.empty?
-        @pf = {}
-        @storages.each {|storage|
-          ch = storage.first.gsub(/[^_a-zA-Z0-9]/, '_')
-          @pf[ch] = PositionFile.parse(storage)
-        }
-      end
-      start_watchers(@chs)
-    end
-
-    def shutdown
-      stop_watchers(@tails.keys, true)
-      super
-    end
-
-    def setup_wacther(ch, pe)
-      wlw = WindowsLogWatcher.new(ch, pe, &method(:receive_lines))
-      wlw.attach do |watcher|
-        wlw.timer_trigger = timer_execute(:in_winevtlog, @read_interval, &watcher.method(:on_notify))
-      end
-      wlw
-    end
-
-    def start_watchers(chs)
-      chs.each { |ch|
-        pe = nil
-        if @pf
-          pe = @pf[ch.gsub(/[^_a-zA-Z0-9]/, '_')]
-          if @read_from_head && pe.read_num.zero?
-            el = Win32::EventLog.open(ch)
-            pe.update(el.oldest_record_number-1,1)
-            el.close
-          end
+      @chs.each do |ch|
+        start, num = @pos_storage.get(ch)
+        if @read_from_head || (!num || num.zero?)
+          el = Win32::EventLog.open(ch)
+          @pos_storage.put(ch, [el.oldest_record_number - 1, 1])
+          el.close
         end
-        @tails[ch] = setup_wacther(ch, pe)
-      }
-    end
-
-    def stop_watchers(chs, unwatched = false)
-      chs.each { |ch|
-        wlw = @tails.delete(ch)
-        if wlw
-          wlw.unwatched = unwatched
-          close_watcher(wlw)
+        timer_execute("in_windows_eventlog_#{escape_channel(ch)}".to_sym, @read_interval) do
+          on_notify(ch)
         end
-      }
+      end
     end
 
-    def close_watcher(wlw)
-      wlw.close
-      # flush_buffer(wlw)
+    def escape_channel(ch)
+      ch.gsub(/[^a-zA-Z0-9]/, '_')
     end
 
-    def receive_lines(ch, lines, pe)
+    def receive_lines(ch, lines)
       return if lines.empty?
       begin
         for r in lines
@@ -165,130 +127,52 @@ module Fluent::Plugin
           @keynames.each {|k| h[k]=@receive_handlers.call(r.send(KEY_MAP[k]).to_s)}
           #h = Hash[@keynames.map {|k| [k, r.send(KEY_MAP[k]).to_s]}]
           router.emit(@tag, Fluent::Engine.now, h)
-          pe[1] +=1
         end
-      rescue
-        $log.error "unexpected error", error: $!.to_s
-        $log.error_backtrace
+      rescue => e
+        log.error "unexpected error", error: e
+        log.error_backtrace
       end
     end
 
+    def on_notify(ch)
+      el = Win32::EventLog.open(ch)
 
-    class WindowsLogWatcher
-      def initialize(ch, pe, &receive_lines)
-        @ch = ch
-        @pe = pe || MemoryPositionEntry.new
-        @receive_lines = receive_lines
-        @timer_trigger = nil
+      current_oldest_record_number = el.oldest_record_number
+      current_total_records = el.total_records
+
+      read_start, read_num = @pos_storage.get(ch)
+
+      # if total_records is zero, oldest_record_number has no meaning.
+      if current_total_records == 0
+        return
       end
 
-      attr_reader   :ch
-      attr_accessor :unwatched
-      attr_accessor :pe
-      attr_accessor :timer_trigger
-
-      def attach
-        yield self
-        on_notify
+      if read_start == 0 && read_num == 0
+        @pos_storage.put(ch, [current_oldest_record_number, current_total_records])
+        return
       end
 
-      def detach
-        @timer_trigger.detach if @timer_trigger.attached?
+      current_end = current_oldest_record_number + current_total_records - 1
+      old_end = read_start + read_num - 1
+
+      if current_oldest_record_number < read_start
+        # may be a record number rotated.
+        current_end += 0xFFFFFFFF
       end
 
-      def close
-        detach
+      if current_end < read_num
+        # something occured.
+        @pos_storage.put(ch, [current_oldest_record_number, current_total_records])
+        return
       end
 
-      def on_notify
-        el = Win32::EventLog.open(@ch)
-        rl_sn = [el.oldest_record_number, el.total_records]
-        pe_sn = [@pe.read_start, @pe.read_num]
-        # if total_records is zero, oldest_record_number has no meaning.
-        if rl_sn[1] == 0
-          return
-        end
+      numlines = current_end - old_end
 
-        if pe_sn[0] == 0 && pe_sn[1] == 0
-          @pe.update(rl_sn[0], rl_sn[1])
-          return
-        end
-
-        cur_end = rl_sn[0] + rl_sn[1] -1
-        old_end = pe_sn[0] + pe_sn[1] -1
-
-        if (rl_sn[0] < pe_sn[0])
-          # may be a record number rotated.
-          cur_end += 0xFFFFFFFF
-        end
-
-        if (cur_end < old_end)
-          # something occured.
-          @pe.update(rl_sn[0], rl_sn[1])
-          return
-        end
-
-        read_more = false
-        begin
-          numlines = cur_end - old_end
-
-          winlogs = el.read(Win32::EventLog::SEEK_READ | Win32::EventLog::FORWARDS_READ, old_end + 1)
-          @receive_lines.call(@ch, winlogs, pe_sn)
-
-          @pe.update(pe_sn[0], pe_sn[1])
-          old_end = pe_sn[0] + pe_sn[1] -1
-        end while read_more
-        el.close
-      end
+      winlogs = el.read(Win32::EventLog::SEEK_READ | Win32::EventLog::FORWARDS_READ, old_end + 1)
+      @receive_lines.call(ch, winlogs)
+      @pos_storage.put(ch, [read_start, read_num + winlogs.size])
+    ensure
+      el.close
     end
-
-    class PositionFile
-      # parsing file and rebuild mysself
-      def self.parse(storage)
-        FilePositionEntry.new(storage)
-      end
-    end
-
-    class FilePositionEntry
-      def initialize(pos_storage)
-        @file = pos_storage.last
-      end
-
-      def update(start, num)
-        @file.put(:start, "%08x" % start)
-        @file.put(:num, "%08x" % num)
-      end
-
-      def read_start
-        raw = @file.get(:start) || 0
-        raw ? raw.to_s.to_i(16) : 0
-      end
-
-      def read_num
-        raw = @file.get(:num) || 0
-        raw ? raw.to_s.to_i(16) : 0
-      end
-    end
-
-    class MemoryPositionEntry
-      def initialize
-        @start = 0
-        @num = 0
-      end
-
-      def update(start, num)
-        @start = start
-        @num = num
-      end
-
-      def read_start
-        @start
-      end
-
-      def read_num
-        @num
-      end
-    end
-
   end
 end
