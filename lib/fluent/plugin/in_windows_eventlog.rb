@@ -62,11 +62,11 @@ module Fluent::Plugin
       if @store_pos
         @chs.each {|ch|
           config = Fluent::Config::Element.new('storage',
-                                               "#{ch.gsub(' ', '_')}", {
+                                               "#{ch.gsub(/[^_a-zA-Z0-9]/, '_')}", {
                                                  "@type" => "local",
                                                  "persistent" => true,
                                                }, [])
-          @storages[ch] = storage_create(usage: "#{ch.gsub(' ', '_')}", conf: config,
+          @storages[ch] = storage_create(usage: "#{ch.gsub(/[^_a-zA-Z0-9]/, '_')}", conf: config,
                                          default_type: DEFAULT_STORAGE_TYPE)
         }
       end
@@ -110,7 +110,7 @@ module Fluent::Plugin
       unless @storages.empty?
         @pf = {}
         @storages.each {|storage|
-          ch = storage.first.gsub(' ', '_')
+          ch = storage.first.gsub(/[^_a-zA-Z0-9]/, '_')
           @pf[ch] = PositionFile.parse(storage)
         }
       end
@@ -134,7 +134,7 @@ module Fluent::Plugin
       chs.each { |ch|
         pe = nil
         if @pf
-          pe = @pf[ch.gsub(' ', '_')]
+          pe = @pf[ch.gsub(/[^_a-zA-Z0-9]/, '_')]
           if @read_from_head && pe.read_num.zero?
             el = Win32::EventLog.open(ch)
             pe.update(el.oldest_record_number-1,1)
