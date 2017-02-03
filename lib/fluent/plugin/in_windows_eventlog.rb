@@ -60,7 +60,7 @@ module Fluent::Plugin
                             method(:no_encode_record)
                           end
       if @store_pos
-        @chs.map {|ch|
+        @chs.each {|ch|
           config = Fluent::Config::Element.new('storage',
                                                "#{ch.gsub(' ', '_')}", {
                                                  "@type" => "local",
