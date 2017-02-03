@@ -160,7 +160,7 @@ module Fluent::Plugin
         current_end += 0xFFFFFFFF
       end
 
-      if current_end < read_num
+      if current_end < old_end
         # something occured.
         @pos_storage.put(ch, [current_oldest_record_number, current_total_records])
         return
@@ -169,7 +169,7 @@ module Fluent::Plugin
       numlines = current_end - old_end
 
       winlogs = el.read(Win32::EventLog::SEEK_READ | Win32::EventLog::FORWARDS_READ, old_end + 1)
-      @receive_lines.call(ch, winlogs)
+      receive_lines(ch, winlogs)
       @pos_storage.put(ch, [read_start, read_num + winlogs.size])
     ensure
       el.close
