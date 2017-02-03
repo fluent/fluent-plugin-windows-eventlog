@@ -29,7 +29,6 @@ module Fluent::Plugin
     config_param :read_from_head, :bool, default: false
     config_param :from_encoding, :string, default: nil
     config_param :encoding, :string, default: nil
-    config_param :store_pos, :bool, default: false
 
     attr_reader :chs
 
@@ -59,17 +58,15 @@ module Fluent::Plugin
                           else
                             method(:no_encode_record)
                           end
-      if @store_pos
-        @chs.each {|ch|
-          config = Fluent::Config::Element.new('storage',
-                                               "#{ch.gsub(/[^_a-zA-Z0-9]/, '_')}", {
-                                                 "@type" => "local",
-                                                 "persistent" => true,
-                                               }, [])
-          @storages[ch] = storage_create(usage: "#{ch.gsub(/[^_a-zA-Z0-9]/, '_')}", conf: config,
-                                         default_type: DEFAULT_STORAGE_TYPE)
-        }
-      end
+      @chs.each {|ch|
+        config = Fluent::Config::Element.new('storage',
+                                             "#{ch.gsub(/[^_a-zA-Z0-9]/, '_')}", {
+                                               "@type" => "local",
+                                               "persistent" => true,
+                                             }, [])
+        @storages[ch] = storage_create(usage: "#{ch.gsub(/[^_a-zA-Z0-9]/, '_')}", conf: config,
+                                       default_type: DEFAULT_STORAGE_TYPE)
+      }
     end
 
     def configure_encoding
