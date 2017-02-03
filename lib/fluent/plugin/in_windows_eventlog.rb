@@ -245,7 +245,6 @@ module Fluent::Plugin
     class PositionFile
       # parsing file and rebuild mysself
       def self.parse(storage)
-        ch = storage.first
         FilePositionEntry.new(storage)
       end
     end
