@@ -43,7 +43,6 @@ module Fluent::Plugin
       @chs = []
       @keynames = []
       @tails = {}
-      @storages = {}
     end
 
     def configure(conf)
