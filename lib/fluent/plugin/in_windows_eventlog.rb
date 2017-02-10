@@ -165,8 +165,6 @@ module Fluent::Plugin
         return
       end
 
-      numlines = current_end - old_end
-
       winlogs = el.read(Win32::EventLog::SEEK_READ | Win32::EventLog::FORWARDS_READ, old_end + 1)
       receive_lines(ch, winlogs)
       @pos_storage.put(ch, [read_start, read_num + winlogs.size])
