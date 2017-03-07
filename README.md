@@ -14,7 +14,7 @@ You must use fluentd 'Windows' brach to use me, and it doesn't work on Linux of 
 #### fluentd Input plugin for Windows Event Log 
 
     <source>
-      type windows_eventlog
+      @type windows_eventlog
       channels application,system
       pos_file c:\temp\mypos
       read_interval 2
