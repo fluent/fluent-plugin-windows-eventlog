@@ -6,8 +6,9 @@ module Fluent::Plugin
   class WindowsEventLogInput < Input
     Fluent::Plugin.register_input('windows_eventlog', self)
 
-    helpers :timer
+    helpers :timer, :storage
 
+    DEFAULT_STORAGE_TYPE = 'local'
     KEY_MAP = {"record_number" => :record_number,
                  "time_generated" => :time_generated,
                  "time_written" => :time_written,
@@ -21,12 +22,19 @@ module Fluent::Plugin
 
     config_param :tag, :string
     config_param :read_interval, :time, default: 2
-    config_param :pos_file, :string, default: nil
+    config_param :pos_file, :string, default: nil,
+                 obsoleted: "This section is not used anymore. Use 'store_pos' instead."
     config_param :channels, :array, default: ['Application']
     config_param :keys, :string, default: []
     config_param :read_from_head, :bool, default: false
     config_param :from_encoding, :string, default: nil
     config_param :encoding, :string, default: nil
+
+    config_section :storage do
+      config_set_default :usage, "positions"
+      config_set_default :@type, DEFAULT_STORAGE_TYPE
+      config_set_default :persistent, true
+    end
 
     attr_reader :chs
 
@@ -55,6 +63,7 @@ module Fluent::Plugin
                           else
                             method(:no_encode_record)
                           end
+      @pos_storage = storage_create(usage: "positions")
     end
 
     def configure_encoding
@@ -92,59 +101,24 @@ module Fluent::Plugin
 
     def start
       super
-      if @pos_file
-        @pf_file = File.open(@pos_file, File::RDWR|File::CREAT|File::BINARY)
-        @pf_file.sync = true
-        @pf = PositionFile.parse(@pf_file)
-      end
-      start_watchers(@chs)
-    end
-
-    def shutdown
-      stop_watchers(@tails.keys, true)
-      @pf_file.close if @pf_file
-      super
-    end
-
-    def setup_wacther(ch, pe)
-      wlw = WindowsLogWatcher.new(ch, pe, &method(:receive_lines))
-      wlw.attach do |watcher|
-        wlw.timer_trigger = timer_execute(:in_winevtlog, @read_interval, &watcher.method(:on_notify))
-      end
-      wlw
-    end
-
-    def start_watchers(chs)
-      chs.each { |ch|
-        pe = nil
-        if @pf
-          pe = @pf[ch]
-          if @read_from_head && pe.read_num.zero?
-            el = Win32::EventLog.open(ch)
-            pe.update(el.oldest_record_number-1,1)
-            el.close
-          end
+      @chs.each do |ch|
+        start, num = @pos_storage.get(ch)
+        if @read_from_head || (!num || num.zero?)
+          el = Win32::EventLog.open(ch)
+          @pos_storage.put(ch, [el.oldest_record_number - 1, 1])
+          el.close
         end
-        @tails[ch] = setup_wacther(ch, pe)
-      }
-    end
-
-    def stop_watchers(chs, unwatched = false)
-      chs.each { |ch|
-        wlw = @tails.delete(ch)
-        if wlw
-          wlw.unwatched = unwatched
-          close_watcher(wlw)
+        timer_execute("in_windows_eventlog_#{escape_channel(ch)}".to_sym, @read_interval) do
+          on_notify(ch)
         end
-      }
+      end
     end
 
-    def close_watcher(wlw)
-      wlw.close
-      # flush_buffer(wlw)
+    def escape_channel(ch)
+      ch.gsub(/[^a-zA-Z0-9]/, '_')
     end
 
-    def receive_lines(ch, lines, pe)
+    def receive_lines(ch, lines)
       return if lines.empty?
       begin
         for r in lines
@@ -152,169 +126,50 @@ module Fluent::Plugin
           @keynames.each {|k| h[k]=@receive_handlers.call(r.send(KEY_MAP[k]).to_s)}
           #h = Hash[@keynames.map {|k| [k, r.send(KEY_MAP[k]).to_s]}]
           router.emit(@tag, Fluent::Engine.now, h)
-          pe[1] +=1
         end
-      rescue
-        $log.error "unexpected error", error: $!.to_s
-        $log.error_backtrace
+      rescue => e
+        log.error "unexpected error", error: e
+        log.error_backtrace
       end
     end
 
+    def on_notify(ch)
+      el = Win32::EventLog.open(ch)
 
-    class WindowsLogWatcher
-      def initialize(ch, pe, &receive_lines)
-        @ch = ch
-        @pe = pe || MemoryPositionEntry.new
-        @receive_lines = receive_lines
-        @timer_trigger = nil
+      current_oldest_record_number = el.oldest_record_number
+      current_total_records = el.total_records
+
+      read_start, read_num = @pos_storage.get(ch)
+
+      # if total_records is zero, oldest_record_number has no meaning.
+      if current_total_records == 0
+        return
       end
 
-      attr_reader   :ch
-      attr_accessor :unwatched
-      attr_accessor :pe
-      attr_accessor :timer_trigger
-
-      def attach
-        yield self
-        on_notify
+      if read_start == 0 && read_num == 0
+        @pos_storage.put(ch, [current_oldest_record_number, current_total_records])
+        return
       end
 
-      def detach
-        @timer_trigger.detach if @timer_trigger.attached?
+      current_end = current_oldest_record_number + current_total_records - 1
+      old_end = read_start + read_num - 1
+
+      if current_oldest_record_number < read_start
+        # may be a record number rotated.
+        current_end += 0xFFFFFFFF
       end
 
-      def close
-        detach
+      if current_end < old_end
+        # something occured.
+        @pos_storage.put(ch, [current_oldest_record_number, current_total_records])
+        return
       end
 
-      def on_notify
-        el = Win32::EventLog.open(@ch)
-        rl_sn = [el.oldest_record_number, el.total_records]
-        pe_sn = [@pe.read_start, @pe.read_num]
-        # if total_records is zero, oldest_record_number has no meaning.
-        if rl_sn[1] == 0
-          return
-        end
-
-        if pe_sn[0] == 0 && pe_sn[1] == 0
-          @pe.update(rl_sn[0], rl_sn[1])
-          return
-        end
-
-        cur_end = rl_sn[0] + rl_sn[1] -1
-        old_end = pe_sn[0] + pe_sn[1] -1
-
-        if (rl_sn[0] < pe_sn[0])
-          # may be a record number rotated.
-          cur_end += 0xFFFFFFFF
-        end
-
-        if (cur_end < old_end)
-          # something occured.
-          @pe.update(rl_sn[0], rl_sn[1])
-          return
-        end
-
-        read_more = false
-        begin
-          numlines = cur_end - old_end
-
-          winlogs = el.read(Win32::EventLog::SEEK_READ | Win32::EventLog::FORWARDS_READ, old_end + 1)
-          @receive_lines.call(@ch, winlogs, pe_sn)
-
-          @pe.update(pe_sn[0], pe_sn[1])
-          old_end = pe_sn[0] + pe_sn[1] -1
-        end while read_more
-        el.close
-      end
+      winlogs = el.read(Win32::EventLog::SEEK_READ | Win32::EventLog::FORWARDS_READ, old_end + 1)
+      receive_lines(ch, winlogs)
+      @pos_storage.put(ch, [read_start, read_num + winlogs.size])
+    ensure
+      el.close
     end
-
-    class PositionFile
-      def initialize(file, map, last_pos)
-        @file = file
-        @map = map
-        @last_pos = last_pos
-      end
-
-      def [](ch)
-        if m = @map[ch]
-          return m
-        end
-        @file.pos = @last_pos
-        @file.write ch
-        @file.write "\t"
-        seek = @file.pos
-        @file.write "00000000\t00000000\n"
-        @last_pos = @file.pos
-        @map[ch] = FilePositionEntry.new(@file, seek)
-      end
-
-      # parsing file and rebuild mysself
-      def self.parse(file)
-        map = {}
-        file.pos = 0
-        file.each_line {|line|
-          # check and get a matched line as m
-          m = /^([^\t]+)\t([0-9a-fA-F]+)\t([0-9a-fA-F]+)/.match(line)
-          next unless m
-          ch = m[1]
-          pos = m[2].to_i(16)
-          seek = file.pos - line.bytesize + ch.bytesize + 1
-          map[ch] = FilePositionEntry.new(file, seek)
-        }
-        new(file, map, file.pos)
-      end
-    end
-
-    class FilePositionEntry
-      START_SIZE = 8
-      NUM_OFFSET = 9
-      NUM_SIZE   = 8
-      LN_OFFSET = 17
-      SIZE = 18
-
-      def initialize(file, seek)
-        @file = file
-        @seek = seek
-      end
-
-      def update(start, num)
-        @file.pos = @seek
-        @file.write "%08x\t%08x" % [start, num]
-      end
-
-      def read_start
-        @file.pos = @seek
-        raw = @file.read(START_SIZE)
-        raw ? raw.to_i(16) : 0
-      end
-
-      def read_num
-        @file.pos = @seek + NUM_OFFSET
-        raw = @file.read(NUM_SIZE)
-        raw ? raw.to_i(16) : 0
-      end
-    end
-
-    class MemoryPositionEntry
-      def initialize
-        @start = 0
-        @num = 0
-      end
-
-      def update(start, num)
-        @start = start
-        @num = num
-      end
-
-      def read_start
-        @start
-      end
-
-      def read_num
-        @num
-      end
-    end
-
   end
 end
