@@ -19,6 +19,13 @@ You must use fluentd 'Windows' brach to use me, and it doesn't work on Linux of 
       pos_file c:\temp\mypos
       read_interval 2
       tag winevt.raw
+      @id windows_eventlog
+      <storage>
+        @type local             # @type local is default.
+        persistent true         # persistent true is default.
+        path ./tmp/storage.json # This is required when persistent is true.
+                                # Or, please consider to use <system> section's root_dir parameter.
+      </storage>
     </source>
 
 
