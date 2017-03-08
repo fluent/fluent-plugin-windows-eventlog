@@ -14,10 +14,10 @@
 
     <source>
       @type windows_eventlog
+      @id windows_eventlog
       channels application,system
       read_interval 2
       tag winevt.raw
-      @id windows_eventlog
       <storage>
         @type local             # @type local is default.
         persistent true         # default is true. If you want to use on-memory storage, set false.
@@ -34,7 +34,7 @@
 |read_interval   | (option) a read interval in second. 2 seconds as default.|
 |from_encoding  | (option) an input characters encoding. nil as default.|
 |encoding   | (option) an output characters encoding. nil as default.|
-|<storage>|Setting for storage plugin for recording read position like in_tail's pos_file|
+|`<storage>`|Setting for storage plugin for recording read position like in_tail's pos_file|
 
 #### read keys
 This plugin reads follows from Windws Event Log. No customization is allowed for now.
