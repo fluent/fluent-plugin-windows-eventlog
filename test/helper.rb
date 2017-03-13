@@ -27,3 +27,6 @@ require 'fluent/plugin/in_windows_eventlog'
 
 class Test::Unit::TestCase
 end
+require 'fluent/test/helpers'
+
+include Fluent::Test::Helpers
