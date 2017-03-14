@@ -1,13 +1,18 @@
 require 'helper'
+require 'generate-windows-event'
 
 class WindowsEventLogInputTest < Test::Unit::TestCase
+
   def setup
     Fluent::Test.setup
   end
 
-  CONFIG = %[
-    tag fluent.eventlog
-  ]
+  CONFIG = config_element("ROOT", "", {"tag" => "fluent.eventlog"}, [
+                            config_element("storage", "", {
+                                             '@type' => 'local',
+                                             'persistent' => false
+                                           })
+                          ])
 
   def create_driver(conf = CONFIG)
     Fluent::Test::Driver::Input.new(Fluent::Plugin::WindowsEventLogInput).configure(conf)
@@ -23,29 +28,21 @@ class WindowsEventLogInputTest < Test::Unit::TestCase
     assert_false d.instance.read_from_head
   end
 
-  def test_format
-    d = create_driver
-
-    # time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    # d.emit({"a"=>1}, time)
-    # d.emit({"a"=>2}, time)
-
-    # d.expect_format %[2011-01-02T13:14:15Z\ttest\t{"a":1}\n]
-    # d.expect_format %[2011-01-02T13:14:15Z\ttest\t{"a":2}\n]
-
-    # d.run
-  end
-
   def test_write
     d = create_driver
 
-    # time = Time.parse("2011-01-02 13:14:15 UTC").to_i
-    # d.emit({"a"=>1}, time)
-    # d.emit({"a"=>2}, time)
+    service = Fluent::Plugin::EventService.new
 
-    # ### FileOutput#write returns path
-    # path = d.run
-    # expect_path = "#{TMP_DIR}/out_file_test._0.log.gz"
-    # assert_equal expect_path, path
+    d.run(expect_emits: 1) do
+      service.run
+    end
+
+    assert(d.events.length >= 1)
+    event = d.events.last
+    record = event.last
+    assert_equal("application", record["channel"])
+    assert_equal("65500", record["event_id"])
+    assert_equal("information", record["event_type"])
+    assert_equal("fluent-plugins", record["source_name"])
   end
 end
