@@ -9,16 +9,17 @@ module Fluent::Plugin
     helpers :timer, :storage
 
     DEFAULT_STORAGE_TYPE = 'local'
-    KEY_MAP = {"record_number" => :record_number,
-                 "time_generated" => :time_generated,
-                 "time_written" => :time_written,
-                 "event_id" => :event_id,
-                 "event_type" => :event_type,
-                 "event_category" => :category,
-                 "source_name" => :source,
-                 "computer_name" => :computer,
-                 "user" => :user,
-                 "description" => :description}
+    KEY_MAP = {"record_number" => [:record_number, :string],
+                 "time_generated" => [:time_generated, :string],
+                 "time_written" => [:time_written, :string],
+                 "event_id" => [:event_id, :string],
+                 "event_type" => [:event_type, :string],
+                 "event_category" => [:category, :string],
+                 "source_name" => [:source, :string],
+                 "computer_name" => [:computer, :string],
+                 "user" => [:user, :string],
+                 "description" => [:description, :string],
+                 "string_inserts" => [:string_inserts, :array]}
 
     config_param :tag, :string
     config_param :read_interval, :time, default: 2
@@ -123,8 +124,19 @@ module Fluent::Plugin
       begin
         for r in lines
           h = {"channel" => ch}
-          @keynames.each {|k| h[k]=@receive_handlers.call(r.send(KEY_MAP[k]).to_s)}
-          #h = Hash[@keynames.map {|k| [k, r.send(KEY_MAP[k]).to_s]}]
+          @keynames.each do |k|
+            type = KEY_MAP[k][1]
+            value = r.send(KEY_MAP[k][0])
+            h[k]=case type
+                 when :string
+                   @receive_handlers.call(value.to_s)
+                 when :array
+                   value.map {|v| @receive_handlers.call(v.to_s)}
+                 else
+                   raise "Unknown value type: #{type}"
+                 end
+          end
+          #h = Hash[@keynames.map {|k| [k, r.send(KEY_MAP[k][0]).to_s]}]
           router.emit(@tag, Fluent::Engine.now, h)
         end
       rescue => e
