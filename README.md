@@ -2,15 +2,15 @@
 
 ## Component
 
-#### fluentd Input plugin for Windows Event Log
+#### fluentd Input plugin for the Windows Event Log
 
-[Fluentd](http://fluentd.org) plugin to read Windows Event Log.
+[Fluentd](http://fluentd.org) plugin to read the Windows Event Log.
 
 ## Installation
     gem install fluent-plugin-windows-eventlog
 
 ## Configuration
-#### fluentd Input plugin for Windows Event Log 
+#### fluentd Input plugin for the Windows Event Log
 
     <source>
       @type windows_eventlog
@@ -19,10 +19,10 @@
       read_interval 2
       tag winevt.raw
       <storage>
-        @type local             # @type local is default.
-        persistent true         # default is true. If you want to use on-memory storage, set false.
+        @type local             # @type local is the default.
+        persistent true         # default is true. Set to false to use in-memory storage.
         path ./tmp/storage.json # This is required when persistent is true.
-                                # Or, please consider to use <system> section's root_dir parameter.
+                                # Or, please consider using <system> section's `root_dir` parameter.
       </storage>
     </source>
 
@@ -30,35 +30,37 @@
 
 |name      | description |
 |:-----    |:-----       |
-|channels   | (option) 'applicaion' as default. one or combination of {application, system, setup, security}. If you want to read setup or security, administrator priv is required to launch fluentd.  |
-|read_interval   | (option) a read interval in second. 2 seconds as default.|
-|from_encoding  | (option) an input characters encoding. nil as default.|
-|encoding   | (option) an output characters encoding. nil as default.|
-|`<storage>`|Setting for storage plugin for recording read position like in_tail's pos_file|
+|`channels`   | (option) 'application' as default. One or more of {'application', 'system', 'setup', 'security'}. If you want to read 'setup' or 'security' logs, you must launch fluentd with administrator privileges.|
+|`keys`   | (option) A subset of [keys](#read-keys) to read. Defaults to all keys.|
+|`read_interval`   | (option) read interval in seconds. 2 seconds as default.|
+|`from_encoding`  | (option) input character encoding. `nil` as default.|
+|`encoding`   | (option) output character encoding. `nil` as default.|
+|`<storage>`| Setting for `storage` plugin for recording read position like `in_tail`'s `pos_file`.|
 
 #### read keys
-This plugin reads follows from Windws Event Log. No customization is allowed for now.
+This plugin reads the following fields from Windows Event Log entries. Use the `keys` configuration option to select a subset. No other customization is allowed for now.
 
 |key|
 |:-----    |
-|record_number   |
-|time_generated|
-|time_written   |
-|event_id   |
-|event_type   |
-|event_category   |
-|source_name   |
-|computer_name  |
-|user   |
-|description   |
+|`record_number` |
+|`time_generated`|
+|`time_written`  |
+|`event_id`      |
+|`event_type`    |
+|`event_category`|
+|`source_name`   |
+|`computer_name` |
+|`user`          |
+|`description`   |
+|`string_inserts`|
 
 ## Etc.
-'read_from_head' is not supporeted currently.You can read newer records after you start first.
+'`read_from_head`' is not supported currently. You can read newer records after you start first.
 No customize to read information keys.
 
 ## Copyright
-####Copyright
+#### Copyright
 Copyright(C) 2014- @okahashi117
-####License
+#### License
 Apache License, Version 2.0
 
