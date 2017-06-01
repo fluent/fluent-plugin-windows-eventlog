@@ -25,8 +25,8 @@ module Fluent::Plugin
     config_param :read_interval, :time, default: 2
     config_param :pos_file, :string, default: nil,
                  obsoleted: "This section is not used anymore. Use 'store_pos' instead."
-    config_param :channels, :array, default: ['Application']
-    config_param :keys, :string, default: []
+    config_param :channels, :array, default: ['application']
+    config_param :keys, :array, default: []
     config_param :read_from_head, :bool, default: false
     config_param :from_encoding, :string, default: nil
     config_param :encoding, :string, default: nil

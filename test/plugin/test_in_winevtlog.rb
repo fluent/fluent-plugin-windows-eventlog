@@ -23,7 +23,7 @@ class WindowsEventLogInputTest < Test::Unit::TestCase
     assert_equal 'fluent.eventlog', d.instance.tag
     assert_equal 2, d.instance.read_interval
     assert_nil d.instance.pos_file
-    assert_equal ['Application'], d.instance.channels
+    assert_equal ['application'], d.instance.channels
     assert_true d.instance.keys.empty?
     assert_false d.instance.read_from_head
   end
