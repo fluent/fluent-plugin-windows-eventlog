@@ -30,12 +30,13 @@
 
 |name      | description |
 |:-----    |:-----       |
-|`channels`   | (option) 'application' as default. One or more of {'application', 'system', 'setup', 'security'}. If you want to read 'setup' or 'security' logs, you must launch fluentd with administrator privileges.|
-|`keys`   | (option) A subset of [keys](#read-keys) to read. Defaults to all keys.|
-|`read_interval`   | (option) read interval in seconds. 2 seconds as default.|
-|`from_encoding`  | (option) input character encoding. `nil` as default.|
-|`encoding`   | (option) output character encoding. `nil` as default.|
-|`<storage>`| Setting for `storage` plugin for recording read position like `in_tail`'s `pos_file`.|
+|`channels`      | (option) 'application' as default. One or more of {'application', 'system', 'setup', 'security'}. If you want to read 'setup' or 'security' logs, you must launch fluentd with administrator privileges.|
+|`keys`          | (option) A subset of [keys](#read-keys) to read. Defaults to all keys.|
+|`read_interval` | (option) Read interval in seconds. 2 seconds as default.|
+|`from_encoding` | (option) Input character encoding. `nil` as default.|
+|`encoding`      | (option) Output character encoding. `nil` as default.|
+|`read_from_head`| (option) Start to read the entries from the oldest, not from when fluentd is started. Defaults to `false`.|
+|`<storage>`     | Setting for `storage` plugin for recording read position like `in_tail`'s `pos_file`.|
 
 #### read keys
 This plugin reads the following fields from Windows Event Log entries. Use the `keys` configuration option to select a subset. No other customization is allowed for now.
@@ -53,10 +54,6 @@ This plugin reads the following fields from Windows Event Log entries. Use the `
 |`user`          |
 |`description`   |
 |`string_inserts`|
-
-## Etc.
-'`read_from_head`' is not supported currently. You can read newer records after you start first.
-No customize to read information keys.
 
 ## Copyright
 #### Copyright
