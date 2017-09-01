@@ -58,6 +58,8 @@ module Fluent::Plugin
       if @keynames.empty?
         @keynames = KEY_MAP.keys
       end
+      @keynames.delete('string_inserts') if @parse_description
+
       @tag = tag
       @stop = false
       configure_encoding
