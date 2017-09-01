@@ -189,22 +189,35 @@ module Fluent::Plugin
       el.close
     end
 
+    GROUP_DELIMITER = "\r\n\r\n".freeze
+    RECORD_DELIMITER = "\r\n\t".freeze
+    FIELD_DELIMITER = "\t\t".freeze
+    NONE_FIELD_DELIMITER = "\t".freeze
+
     def parse_desc(record)
       desc = record.delete('description'.freeze)
       return if desc.nil?
 
-      elems = desc.split("\r\n\r\n".freeze)
+      elems = desc.split(GROUP_DELIMITER)
       record['description_title'] = elems.shift
       elems.each { |elem|
         parent_key = nil
-        elem.split("\r\n\t".freeze).each { |r|
-          key, value = r.split("\t\t".freeze)
+        elem.split(RECORD_DELIMITER).each { |r|
+          key, value = if r.index(FIELD_DELIMITER)
+                         r.split(FIELD_DELIMITER)
+                       else
+                         r.split(NONE_FIELD_DELIMITER)
+                       end
           key.chop!  # remove ':' from key
           if value.nil?
             parent_key = to_key(key)
           else
-            k = "#{parent_key}.#{to_key(key)}"
-            record[k] = value
+            if parent_key.nil?
+              res[to_key(key)] = value
+            else
+              k = "#{parent_key}.#{to_key(key)}"
+              res[k] = value
+            end
           end
         }
       }
