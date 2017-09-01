@@ -212,6 +212,8 @@ module Fluent::Plugin
           if value.nil?
             parent_key = to_key(key)
           else
+            # parsed value sometimes contain unexpected "\t". So remove it.
+            value.strip!
             if parent_key.nil?
               record[to_key(key)] = value
             else
