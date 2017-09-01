@@ -30,6 +30,8 @@ module Fluent::Plugin
     config_param :read_from_head, :bool, default: false
     config_param :from_encoding, :string, default: nil
     config_param :encoding, :string, default: nil
+    desc "Parse 'description' field and set parsed result into event record. 'description' field is removed from the record"
+    config_param :parse_description, :bool, default: false
 
     config_section :storage do
       config_set_default :usage, "positions"
@@ -136,6 +138,7 @@ module Fluent::Plugin
                    raise "Unknown value type: #{type}"
                  end
           end
+          parse_desc(h) if @parse_description
           #h = Hash[@keynames.map {|k| [k, r.send(KEY_MAP[k][0]).to_s]}]
           router.emit(@tag, Fluent::Engine.now, h)
         end
@@ -182,6 +185,33 @@ module Fluent::Plugin
       @pos_storage.put(ch, [read_start, read_num + winlogs.size])
     ensure
       el.close
+    end
+
+    def parse_desc(record)
+      desc = record.delete('description'.freeze)
+      return if desc.nil?
+
+      elems = desc.split("\r\n\r\n".freeze)
+      record['description_title'] = elems.shift
+      elems.each { |elem|
+        parent_key = nil
+        elem.split("\r\n\t".freeze).each { |r|
+          key, value = r.split("\t\t".freeze)
+          key.chop!  # remove ':' from key
+          if value.nil?
+            parent_key = to_key(key)
+          else
+            k = "#{parent_key}.#{to_key(key)}"
+            record[k] = value
+          end
+        }
+      }
+    end
+
+    def to_key(key)
+      key.downcase!
+      key.gsub!(' '.freeze, '_'.freeze)
+      key
     end
   end
 end
