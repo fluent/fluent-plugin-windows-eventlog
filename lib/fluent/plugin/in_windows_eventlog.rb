@@ -213,10 +213,10 @@ module Fluent::Plugin
             parent_key = to_key(key)
           else
             if parent_key.nil?
-              res[to_key(key)] = value
+              record[to_key(key)] = value
             else
               k = "#{parent_key}.#{to_key(key)}"
-              res[k] = value
+              record[k] = value
             end
           end
         }
