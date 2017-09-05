@@ -30,7 +30,7 @@ module Fluent::Plugin
     config_param :read_from_head, :bool, default: false
     config_param :from_encoding, :string, default: nil
     config_param :encoding, :string, default: nil
-    desc "Parse 'description' field and set parsed result into event record. 'description' field is removed from the record"
+    desc "Parse 'description' field and set parsed result into event record. 'description' and 'string_inserts' fields are removed from the record"
     config_param :parse_description, :bool, default: false
 
     config_section :storage do
