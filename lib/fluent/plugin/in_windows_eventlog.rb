@@ -30,6 +30,8 @@ module Fluent::Plugin
     config_param :read_from_head, :bool, default: false
     config_param :from_encoding, :string, default: nil
     config_param :encoding, :string, default: nil
+    desc "Parse 'description' field and set parsed result into event record. 'description' and 'string_inserts' fields are removed from the record"
+    config_param :parse_description, :bool, default: false
 
     config_section :storage do
       config_set_default :usage, "positions"
@@ -56,6 +58,8 @@ module Fluent::Plugin
       if @keynames.empty?
         @keynames = KEY_MAP.keys
       end
+      @keynames.delete('string_inserts') if @parse_description
+
       @tag = tag
       @stop = false
       configure_encoding
@@ -136,6 +140,7 @@ module Fluent::Plugin
                    raise "Unknown value type: #{type}"
                  end
           end
+          parse_desc(h) if @parse_description
           #h = Hash[@keynames.map {|k| [k, r.send(KEY_MAP[k][0]).to_s]}]
           router.emit(@tag, Fluent::Engine.now, h)
         end
@@ -182,6 +187,48 @@ module Fluent::Plugin
       @pos_storage.put(ch, [read_start, read_num + winlogs.size])
     ensure
       el.close
+    end
+
+    GROUP_DELIMITER = "\r\n\r\n".freeze
+    RECORD_DELIMITER = "\r\n\t".freeze
+    FIELD_DELIMITER = "\t\t".freeze
+    NONE_FIELD_DELIMITER = "\t".freeze
+
+    def parse_desc(record)
+      desc = record.delete('description'.freeze)
+      return if desc.nil?
+
+      elems = desc.split(GROUP_DELIMITER)
+      record['description_title'] = elems.shift
+      elems.each { |elem|
+        parent_key = nil
+        elem.split(RECORD_DELIMITER).each { |r|
+          key, value = if r.index(FIELD_DELIMITER)
+                         r.split(FIELD_DELIMITER)
+                       else
+                         r.split(NONE_FIELD_DELIMITER)
+                       end
+          key.chop!  # remove ':' from key
+          if value.nil?
+            parent_key = to_key(key)
+          else
+            # parsed value sometimes contain unexpected "\t". So remove it.
+            value.strip!
+            if parent_key.nil?
+              record[to_key(key)] = value
+            else
+              k = "#{parent_key}.#{to_key(key)}"
+              record[k] = value
+            end
+          end
+        }
+      }
+    end
+
+    def to_key(key)
+      key.downcase!
+      key.gsub!(' '.freeze, '_'.freeze)
+      key
     end
   end
 end
