@@ -22,4 +22,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "test-unit", "~> 3.2.0"
   spec.add_runtime_dependency "fluentd", [">= 0.14.12", "< 2"]
   spec.add_runtime_dependency "win32-eventlog"
+  spec.add_runtime_dependency "winevt_c"
 end
