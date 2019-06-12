@@ -6,12 +6,20 @@ module Fluent::Plugin
   class WindowsEventLog2Input < Input
     Fluent::Plugin.register_input('windows_eventlog2', self)
 
-    helpers :timer
+    helpers :timer, :storage
+
+    DEFAULT_STORAGE_TYPE = 'local'
 
     config_param :tag, :string
     config_param :read_interval, :time, default: 2
     config_param :channels, :array, default: ['application']
     config_param :read_from_head, :bool, default: false
+
+    config_section :storage do
+      config_set_default :usage, "bookmarks"
+      config_set_default :@type, DEFAULT_STORAGE_TYPE
+      config_set_default :persistent, true
+    end
 
     def initalize
       super
@@ -24,17 +32,20 @@ module Fluent::Plugin
 
       @tag = tag
       @tailing = @read_from_head ? false : true
+      @bookmarks_storage = storage_create(usage: "bookmarks")
     end
 
     def start
       super
 
       @chs.each do |ch|
+        bookmarkXml = @bookmarks_storage.get(ch)
         subscribe = Winevt::EventLog::Subscribe.new
+        bookmark = Winevt::EventLog::Bookmark.new(bookmarkXml)
         subscribe.tail = @tailing
-        subscribe.subscribe(ch, "*")
+        subscribe.subscribe(ch, "*", bookmark)
         timer_execute("in_windows_eventlog_#{escape_channel(ch)}".to_sym, @read_interval) do
-          on_notify(subscribe)
+          on_notify(ch, subscribe)
         end
       end
     end
@@ -43,12 +54,13 @@ module Fluent::Plugin
       ch.gsub(/[^a-zA-Z0-9]/, '_')
     end
 
-    def on_notify(subscribe)
+    def on_notify(ch, subscribe)
       es = Fluent::MultiEventStream.new
       subscribe.each do |xml|
         es.add(Fluent::Engine.now, xml)
       end
       router.emit_stream(@tag, es)
+      @bookmarks_storage.put(ch, subscribe.bookmark)
     end
   end
 end
