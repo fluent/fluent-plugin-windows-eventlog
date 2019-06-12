@@ -40,18 +40,10 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
     event = d.events.last
     record = event.last
 
-    doc = REXML::Document.new(record)
-    REXML::XPath.each(doc, "/Event/System/Channel").each do |channel|
-      assert_equal("Application", channel.first.to_s)
-    end
-    REXML::XPath.each(doc, "/Event/System/EventID").each do |event_id|
-      assert_equal("65500", event_id.first.to_s)
-    end
-    REXML::XPath.each(doc, "/Event/System/Level").each do |level|
-      assert_equal("4", level.first.to_s)
-    end
-    REXML::XPath.each(doc, "/Event/System/Provider").each do |provider|
-      assert_equal("fluent-plugins", provider.attributes["Name"])
-    end
+    doc = REXML::Document.new(record[:message])
+    assert_equal("Application", doc.elements["/Event/System/Channel"].text)
+    assert_equal("65500", doc.elements["/Event/System/EventID"].text)
+    assert_equal("4", doc.elements["/Event/System/Level"].text)
+    assert_equal("fluent-plugins", doc.elements["/Event/System/Provider"].attributes["Name"])
   end
 end

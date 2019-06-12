@@ -57,7 +57,7 @@ module Fluent::Plugin
     def on_notify(ch, subscribe)
       es = Fluent::MultiEventStream.new
       subscribe.each do |xml|
-        es.add(Fluent::Engine.now, xml)
+        es.add(Fluent::Engine.now, {message: xml})
       end
       router.emit_stream(@tag, es)
       @bookmarks_storage.put(ch, subscribe.bookmark)
