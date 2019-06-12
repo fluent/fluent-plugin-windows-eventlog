@@ -24,6 +24,7 @@ end
 
 require 'fluent/test/driver/input'
 require 'fluent/plugin/in_windows_eventlog'
+require 'fluent/plugin/in_windows_eventlog2'
 
 class Test::Unit::TestCase
 end
