@@ -39,7 +39,7 @@ module Fluent::Plugin
       super
 
       @chs.each do |ch|
-        bookmarkXml = @bookmarks_storage.get(ch)
+        bookmarkXml = @bookmarks_storage.get(ch) || ""
         subscribe = Winevt::EventLog::Subscribe.new
         bookmark = Winevt::EventLog::Bookmark.new(bookmarkXml)
         subscribe.tail = @tailing
