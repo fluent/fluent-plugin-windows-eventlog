@@ -1,6 +1,5 @@
 require 'helper'
 require 'generate-windows-event'
-require 'rexml/document'
 
 class WindowsEventLog2InputTest < Test::Unit::TestCase
 
