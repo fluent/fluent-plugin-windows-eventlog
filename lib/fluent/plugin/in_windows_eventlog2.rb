@@ -6,7 +6,7 @@ module Fluent::Plugin
   class WindowsEventLog2Input < Input
     Fluent::Plugin.register_input('windows_eventlog2', self)
 
-    helpers :timer, :storage
+    helpers :timer, :storage, :parser
 
     DEFAULT_STORAGE_TYPE = 'local'
 
@@ -21,6 +21,11 @@ module Fluent::Plugin
       config_set_default :persistent, true
     end
 
+    config_section :parse do
+      config_set_default :@type, 'winevt_xml'
+      config_set_default :estimate_current_event, false
+    end
+
     def initalize
       super
       @chs = []
@@ -33,6 +38,7 @@ module Fluent::Plugin
       @tag = tag
       @tailing = @read_from_head ? false : true
       @bookmarks_storage = storage_create(usage: "bookmarks")
+      @parser = parser_create
     end
 
     def start
@@ -57,7 +63,9 @@ module Fluent::Plugin
     def on_notify(ch, subscribe)
       es = Fluent::MultiEventStream.new
       subscribe.each do |xml|
-        es.add(Fluent::Engine.now, {message: xml})
+        @parser.parse(xml) do |time, record|
+          es.add(Fluent::Engine.now, record)
+        end
       end
       router.emit_stream(@tag, es)
       @bookmarks_storage.put(ch, subscribe.bookmark)
