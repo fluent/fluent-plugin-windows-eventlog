@@ -16,6 +16,7 @@ module Fluent::Plugin
     config_param :read_from_head, :bool, default: false
     config_param :from_encoding, :string, default: nil
     config_param :encoding, :string, default: nil
+    config_param :parse_description, :bool, default: false
 
     config_section :storage do
       config_set_default :usage, "bookmarks"
@@ -109,9 +110,10 @@ module Fluent::Plugin
       es = Fluent::MultiEventStream.new
       subscribe.each do |xml, message|
         @parser.parse(xml) do |time, record|
-          if message
+          if message && !message.empty?
             message = message.gsub(/(%\d+)/, '\1$s')
             record["Description"] = @message_handler.call(sprintf(message, *record["EventData"]))
+            parse_desc(record) if @parse_description
           end
           es.add(Fluent::Engine.now, record)
         end
@@ -119,5 +121,51 @@ module Fluent::Plugin
       router.emit_stream(@tag, es)
       @bookmarks_storage.put(ch, subscribe.bookmark)
     end
+
+    #### These lines copied from in_windows_eventlog plugin:
+    #### https://github.com/fluent/fluent-plugin-windows-eventlog/blob/528290d896a885c7721f850943daa3a43a015f3d/lib/fluent/plugin/in_windows_eventlog.rb#L192-L232
+    GROUP_DELIMITER = "\r\n\r\n".freeze
+    RECORD_DELIMITER = "\r\n\t".freeze
+    FIELD_DELIMITER = "\t\t".freeze
+    NONE_FIELD_DELIMITER = "\t".freeze
+
+    def parse_desc(record)
+      desc = record.delete('Description'.freeze)
+      return if desc.nil?
+      record.delete("EventData")
+
+      elems = desc.split(GROUP_DELIMITER)
+      record['DescriptionTitle'] = elems.shift
+      elems.each { |elem|
+        parent_key = nil
+        elem.split(RECORD_DELIMITER).each { |r|
+          key, value = if r.index(FIELD_DELIMITER)
+                         r.split(FIELD_DELIMITER)
+                       else
+                         r.split(NONE_FIELD_DELIMITER)
+                       end
+          key.chop!  # remove ':' from key
+          if value.nil?
+            parent_key = to_key(key)
+          else
+            # parsed value sometimes contain unexpected "\t". So remove it.
+            value.strip!
+            if parent_key.nil?
+              record[to_key(key)] = value
+            else
+              k = "#{parent_key}.#{to_key(key)}"
+              record[k] = value
+            end
+          end
+        }
+      }
+    end
+
+    def to_key(key)
+      key.downcase!
+      key.gsub!(' '.freeze, '_'.freeze)
+      key
+    end
+    ####
   end
 end
