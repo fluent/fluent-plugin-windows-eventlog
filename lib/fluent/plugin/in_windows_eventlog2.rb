@@ -110,7 +110,8 @@ module Fluent::Plugin
       es = Fluent::MultiEventStream.new
       subscribe.each do |xml, message|
         @parser.parse(xml) do |time, record|
-          if message && !message.empty?
+          # record["EventData"] for none parser.
+          if message && !message.empty? && record["EventData"]
             message = message.gsub(/(%\d+)/, '\1$s')
             record["Description"] = @message_handler.call(sprintf(message, *record["EventData"]))
             parse_desc(record) if @parse_description
