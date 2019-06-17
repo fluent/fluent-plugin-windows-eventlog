@@ -62,8 +62,12 @@ module Fluent::Plugin
 
     def on_notify(ch, subscribe)
       es = Fluent::MultiEventStream.new
-      subscribe.each do |xml|
+      subscribe.each do |xml, message|
         @parser.parse(xml) do |time, record|
+          if message
+            message = message.gsub(/(%\d+)/, '\1$s')
+            record["Description"] = sprintf(message, *record["EventData"])
+          end
           es.add(Fluent::Engine.now, record)
         end
       end
