@@ -9,10 +9,28 @@ module Fluent::Plugin
     helpers :timer, :storage, :parser
 
     DEFAULT_STORAGE_TYPE = 'local'
+    KEY_MAP = {"Channel"               => ["Channel",               :string],
+               "ProviderName"          => ["ProviderName",          :string],
+               "ProviderGUID"          => ["ProviderGUID",          :string],
+               "EventID"               => ["EventID",               :string],
+               "Level"                 => ["Level",                 :string],
+               "Task"                  => ["Task",                  :string],
+               "Opcode"                => ["Opcode",                :string],
+               "Keywords"              => ["Keywords",              :string],
+               "TimeCreated"           => ["TimeCreated",           :string],
+               "EventRecordID"         => ["EventRecordID",         :string],
+               "ActivityID"            => ["ActivityID",            :string],
+               "CorrelationActivityID" => ["CorrelationActivityID", :string],
+               "ThreadID"              => ["ThreadID",              :string],
+               "Computer"              => ["Computer",              :string],
+               "UserID"                => ["UserID",                :string],
+               "Description"           => ["Description",           :string],
+               "EventData"             => ["EventData",             :array]}
 
     config_param :tag, :string
     config_param :read_interval, :time, default: 2
     config_param :channels, :array, default: ['application']
+    config_param :keys, :array, default: []
     config_param :read_from_head, :bool, default: false
     config_param :from_encoding, :string, default: nil
     config_param :encoding, :string, default: nil
@@ -32,11 +50,17 @@ module Fluent::Plugin
     def initalize
       super
       @chs = []
+      @keynames = []
     end
 
     def configure(conf)
       super
       @chs = @channels.map {|ch| ch.strip.downcase }.uniq
+      @keynames = @keys.map {|k| k.strip }.uniq
+      if @keynames.empty?
+        @keynames = KEY_MAP.keys
+      end
+      @keynames.delete('EventData') if @parse_description
 
       @tag = tag
       @tailing = @read_from_head ? false : true
@@ -113,10 +137,28 @@ module Fluent::Plugin
           # record["EventData"] for none parser.
           if message && !message.empty? && record["EventData"]
             message = message.gsub(/(%\d+)/, '\1$s')
-            record["Description"] = @message_handler.call(sprintf(message, *record["EventData"]))
-            parse_desc(record) if @parse_description
+            record["Description"] = sprintf(message, *record["EventData"])
           end
-          es.add(Fluent::Engine.now, record)
+          if record["EventData"]
+            h = {}
+            @keynames.each do |k|
+              type = KEY_MAP[k][1]
+              value = record[KEY_MAP[k][0]]
+              h[k]=case type
+                   when :string
+                     @message_handler.call(value.to_s)
+                   when :array
+                     value.map {|v| @message_handler.call(v.to_s)}
+                   else
+                     raise "Unknown value type: #{type}"
+                   end
+            end
+            parse_desc(h) if @parse_description
+            es.add(Fluent::Engine.now, h)
+          else
+            # for none parser
+            es.add(Fluent::Engine.now, record)
+          end
         end
       end
       router.emit_stream(@tag, es)
@@ -131,9 +173,8 @@ module Fluent::Plugin
     NONE_FIELD_DELIMITER = "\t".freeze
 
     def parse_desc(record)
-      desc = record.delete('Description'.freeze)
+      desc = record.delete("Description".freeze)
       return if desc.nil?
-      record.delete("EventData")
 
       elems = desc.split(GROUP_DELIMITER)
       record['DescriptionTitle'] = elems.shift
