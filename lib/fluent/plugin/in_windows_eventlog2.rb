@@ -93,8 +93,13 @@ module Fluent::Plugin
         @parser.parse(xml) do |time, record|
           # record["EventData"] for none parser.
           if message && !message.empty? && record["EventData"]
-            message = message.gsub(/(%\d+)/, '\1$s')
-            record["Description"] = sprintf(message, *record["EventData"])
+            record["Description"] = if record["EventData"].length >= 2
+                                      message = message.gsub(/(%\d+)/, '\1$s')
+                                      sprintf(message, *record["EventData"])
+                                    else
+                                      # If only one EventData elements, it should be pass-through the first element into description.
+                                      record["EventData"].first
+                                    end
           end
           if record["EventData"]
             h = {}
