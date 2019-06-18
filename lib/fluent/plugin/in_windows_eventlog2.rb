@@ -66,50 +66,7 @@ module Fluent::Plugin
       @tailing = @read_from_head ? false : true
       @bookmarks_storage = storage_create(usage: "bookmarks")
       @parser = parser_create
-      configure_encoding
-      @message_handler = if @encoding
-                           method(:encode_record)
-                         else
-                           method(:no_encode_record)
-                          end
-
     end
-
-    #### These lines copied from in_windows_eventlog plugin:
-    #### https://github.com/fluent/fluent-plugin-windows-eventlog/blob/528290d896a885c7721f850943daa3a43a015f3d/lib/fluent/plugin/in_windows_eventlog.rb#L74-L105
-    def configure_encoding
-      unless @encoding
-        if @from_encoding
-          raise Fluent::ConfigError, "windows_eventlog: 'from_encoding' parameter must be specied with 'encoding' parameter."
-        end
-      end
-
-      @encoding = parse_encoding_param(@encoding) if @encoding
-      @from_encoding = parse_encoding_param(@from_encoding) if @from_encoding
-    end
-
-    def parse_encoding_param(encoding_name)
-      begin
-        Encoding.find(encoding_name) if encoding_name
-      rescue ArgumentError => e
-        raise Fluent::ConfigError, e.message
-      end
-    end
-
-    def encode_record(record)
-      if @encoding
-        if @from_encoding
-          record.encode!(@encoding, @from_encoding)
-        else
-          record.force_encoding(@encoding)
-        end
-      end
-    end
-
-    def no_encode_record(record)
-      record
-    end
-    ####
 
     def start
       super
@@ -146,9 +103,9 @@ module Fluent::Plugin
               value = record[KEY_MAP[k][0]]
               h[k]=case type
                    when :string
-                     @message_handler.call(value.to_s)
+                     value.to_s
                    when :array
-                     value.map {|v| @message_handler.call(v.to_s)}
+                     value.map {|v| v.to_s}
                    else
                      raise "Unknown value type: #{type}"
                    end
