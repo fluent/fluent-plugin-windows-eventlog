@@ -34,8 +34,6 @@ module Fluent::Plugin
     config_param :channels, :array, default: ['application']
     config_param :keys, :array, default: []
     config_param :read_from_head, :bool, default: false
-    config_param :from_encoding, :string, default: nil
-    config_param :encoding, :string, default: nil
     config_param :parse_description, :bool, default: false
 
     config_section :storage do
