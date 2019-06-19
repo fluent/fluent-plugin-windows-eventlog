@@ -9,24 +9,25 @@ module Fluent::Plugin
     helpers :timer, :storage, :parser
 
     DEFAULT_STORAGE_TYPE = 'local'
-    KEY_MAP = {"Channel"               => ["Channel",               :string],
-               "ProviderName"          => ["ProviderName",          :string],
-               "ProviderGUID"          => ["ProviderGUID",          :string],
-               "EventID"               => ["EventID",               :string],
-               "Level"                 => ["Level",                 :string],
-               "Task"                  => ["Task",                  :string],
-               "Opcode"                => ["Opcode",                :string],
-               "Keywords"              => ["Keywords",              :string],
-               "TimeCreated"           => ["TimeCreated",           :string],
-               "EventRecordID"         => ["EventRecordID",         :string],
-               "ActivityID"            => ["ActivityID",            :string],
-               "CorrelationActivityID" => ["CorrelationActivityID", :string],
-               "ThreadID"              => ["ThreadID",              :string],
-               "Computer"              => ["Computer",              :string],
-               "UserID"                => ["UserID",                :string],
-               "Version"               => ["Version",               :string],
-               "Description"           => ["Description",           :string],
-               "EventData"             => ["EventData",             :array]}
+    KEY_MAP = {"ProviderName"      => ["ProviderName",          :string],
+               "ProviderGUID"      => ["ProviderGUID",          :string],
+               "EventID"           => ["EventID",               :string],
+               "Qualifiers"        => ["Qualifiers",            :string],
+               "Level"             => ["Level",                 :string],
+               "Task"              => ["Task",                  :string],
+               "Opcode"            => ["Opcode",                :string],
+               "Keywords"          => ["Keywords",              :string],
+               "TimeCreated"       => ["TimeCreated",           :string],
+               "EventRecordID"     => ["EventRecordID",         :string],
+               "ActivityID"        => ["ActivityID",            :string],
+               "RelatedActivityID" => ["RelatedActivityID",     :string],
+               "ThreadID"          => ["ThreadID",              :string],
+               "Channel"           => ["Channel",               :string],
+               "Computer"          => ["Computer",              :string],
+               "UserID"            => ["UserID",                :string],
+               "Version"           => ["Version",               :string],
+               "Description"       => ["Description",           :string],
+               "EventData"         => ["EventData",             :array]}
 
     config_param :tag, :string
     config_param :read_interval, :time, default: 2
