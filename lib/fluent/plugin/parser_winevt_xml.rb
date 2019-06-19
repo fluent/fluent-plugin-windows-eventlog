@@ -23,6 +23,7 @@ module Fluent::Plugin
       record["ThreadID"]              = (doc/'Event'/'System'/'Execution').attribute("ThreadID").text rescue nil
       record["Computer"]              = (doc/'Event'/'System'/"Computer").text rescue nil
       record["UserID"]                = (doc/'Event'/'System'/"UserID").text rescue nil
+      record["Version"]               = (doc/'Event'/'System'/'Version').text rescue nil
       record["EventData"]             = []
       (doc/'Event'/'EventData'/'Data').each do |elem|
         record["EventData"] << elem.text

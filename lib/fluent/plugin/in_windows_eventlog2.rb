@@ -24,6 +24,7 @@ module Fluent::Plugin
                "ThreadID"              => ["ThreadID",              :string],
                "Computer"              => ["Computer",              :string],
                "UserID"                => ["UserID",                :string],
+               "Version"               => ["Version",               :string],
                "Description"           => ["Description",           :string],
                "EventData"             => ["EventData",             :array]}
 
