@@ -11,7 +11,9 @@
 
 ## Configuration
 
-### fluentd Input plugin for the Windows Event Log
+### in_windows_eventlog
+
+#### fluentd Input plugin for the Windows Event Log
 
     <source>
       @type windows_eventlog
@@ -27,7 +29,7 @@
       </storage>
     </source>
 
-### parameters
+#### parameters
 
 |name      | description |
 |:-----    |:-----       |
@@ -40,7 +42,7 @@
 |`<storage>`        | Setting for `storage` plugin for recording read position like `in_tail`'s `pos_file`.|
 |`parse_description`| (option) parse `description` field and set parsed result into the record. `parse` and `string_inserts` fields are removed|
 
-#### Available keys
+##### Available keys
 
 This plugin reads the following fields from Windows Event Log entries. Use the `keys` configuration option to select a subset. No other customization is allowed for now.
 
@@ -58,7 +60,7 @@ This plugin reads the following fields from Windows Event Log entries. Use the `
 |`description`   |
 |`string_inserts`|
 
-#### `parse_description` details
+##### `parse_description` details
 
 Here is an example with `parse_description true`.
 
@@ -124,9 +126,150 @@ NOTE: This feature assumes `description` field has following formats:
 
 If your `description` doesn't follow this format, the parsed result is only `description_title` field with same `description` content.
 
+### in_windows_eventlog2
+
+#### fluentd Input plugin for the Windows Event Log
+
+    <source>
+      @type windows_eventlog2
+      @id windows_eventlog2
+      channels application,system
+      read_interval 2
+      tag winevt.raw
+      <storage>
+        @type local             # @type local is the default.
+        persistent true         # default is true. Set to false to use in-memory storage.
+        path ./tmp/storage.json # This is required when persistent is true.
+                                # Or, please consider using <system> section's `root_dir` parameter.
+      </storage>
+      <parse>
+        @type winevt_xml # @type winevt_xml is the default. winevt_xml and none parsers are supported for now.
+      </parse>
+    </source>
+
+**NOTE:** in_windows_eventlog2 always handles EventLog records as UTF-8 characters. Users don't have to specify encoding related parameters and they are not provided.
+
+#### parameters
+
+|name      | description |
+|:-----    |:-----       |
+|`channels`         | (option) 'application' as default. One or more of {'application', 'system', 'setup', 'security'}. If you want to read 'setup' or 'security' logs, you must launch fluentd with administrator privileges.|
+|`keys`             | (option) A subset of [keys](#read-keys) to read. Defaults to all keys.|
+|`read_interval`    | (option) Read interval in seconds. 2 seconds as default.|
+|`from_encoding`    | (option) Input character encoding. `nil` as default.|
+|`<storage>`        | Setting for `storage` plugin for recording read position like `in_tail`'s `pos_file`.|
+|`<parse>`          | Setting for `parser` plugin for parsing raw XML EventLog records. |
+|`parse_description`| (option) parse `description` field and set parsed result into the record. `parse` and `string_inserts` fields are removed|
+
+##### Available keys
+
+This plugin reads the following fields from Windows Event Log entries. Use the `keys` configuration option to select a subset. No other customization is allowed for now.
+
+|key|
+|:-----             |
+|`ProviderName`     |
+|`ProviderGuid`     |
+|`EventID`          |
+|`Qualifiers`       |
+|`Level`            |
+|`Task`             |
+|`Opcode`           |
+|`Keywords`         |
+|`TimeCreated`      |
+|`EventRecordId`    |
+|`ActivityID`       |
+|`RelatedActivityID`|
+|`ProcessID`        |
+|`ThreadID`         |
+|`Channel`          |
+|`Computer`         |
+|`UserID`           |
+|`Version`          |
+|`Description`      |
+|`EventData`        |
+
+##### `parse_description` details
+
+Here is an example with `parse_description true`.
+
+```
+{
+  "ProviderName": "Microsoft-Windows-Security-Auditing",
+  "ProviderGUID": "{D441060A-9695-472B-90BC-24DCA9D503A4}",
+  "EventID": "4798",
+  "Qualifiers": "",
+  "Level": "0",
+  "Task": "13824",
+  "Opcode": "0",
+  "Keywords": "0x8020000000000000",
+  "TimeCreated": "2019-06-19T03:10:01.982940200Z",
+  "EventRecordID": "87028",
+  "ActivityID": "",
+  "RelatedActivityID": "{2599DE71-2F70-44AD-9DC8-C5FF2AE8D1EF}",
+  "ThreadID": "16888",
+  "Channel": "Security",
+  "Computer": "DESKTOP-TEST",
+  "UserID": "",
+  "Version": "0",
+  "Description": "A user's local group membership was enumerated.\r\n\r\nSubject:\r\n\tSecurity ID:\t\tS-X-Y-Z\r\n\tAccount Name:\t\tDESKTOP-TEST$\r\n\tAccount Domain:\t\tWORKGROUP\r\n\tLogon ID:\t\t0x3e7\r\n\r\nUser:\r\n\tSecurity ID:\t\tS-XXX-YYY-ZZZ0\r\n\tAccount Name:\t\tAdministrator\r\n\tAccount Domain:\t\tDESKTOP-TEST\r\n\r\nProcess Information:\r\n\tProcess ID:\t\t0xbac\r\n\tProcess Name:\t\tC:\\Windows\\System32\\svchost.exe\r\n",
+  "EventData": [
+    "Administrator",
+    "DESKTOP-TEST",
+    "S-XXX-YYY-ZZZ",
+    "S-X-Y-Z",
+    "DESKTOP-TEST$",
+    "WORKGROUP",
+    "0x3e7",
+    "0xbac",
+    "C:\\Windows\\System32\\svchost.exe"
+  ]
+}
+```
+
+This record is transformed to
+
+```
+{
+  "ProviderName": "Microsoft-Windows-Security-Auditing",
+  "ProviderGUID": "{D441060A-9695-472B-90BC-24DCA9D503A4}",
+  "EventID": "4798",
+  "Qualifiers": "",
+  "Level": "0",
+  "Task": "13824",
+  "Opcode": "0",
+  "Keywords": "0x8020000000000000",
+  "TimeCreated": "2019-06-19T03:10:01.982940200Z",
+  "EventRecordID": "87028",
+  "ActivityID": "",
+  "RelatedActivityID": "{2599DE71-2F70-44AD-9DC8-C5FF2AE8D1EF}",
+  "ThreadID": "16888",
+  "Channel": "Security",
+  "Computer": "DESKTOP-TEST",
+  "UserID": "",
+  "Version": "0",
+  "DescriptionTitle": "A user's local group membership was enumerated.",
+  "subject.security_id": "S-X-Y-Z",
+  "subject.account_name": "DESKTOP-TEST$",
+  "subject.account_domain": "WORKGROUP",
+  "subject.logon_id": "0x3e7",
+  "user.security_id": "S-XXX-YYY-ZZZ",
+  "user.account_name": "Administrator",
+  "user.account_domain": "DESKTOP-TEST",
+  "process_information.process_id": "0xbac",
+  "process_information.process_name": "C:\\Windows\\System32\\svchost.exe"
+}
+```
+
+NOTE: This feature assumes `description` field has following formats:
+
+- group delimiter: `\r\n\r\n`
+- record delimiter: `\r\n\t`
+- field delimiter: `\t\t`
+
+If your `description` doesn't follow this format, the parsed result is only `description_title` field with same `description` content.
+
 ## Copyright
 ### Copyright
 Copyright(C) 2014- @okahashi117
 ### License
 Apache License, Version 2.0
-
