@@ -93,13 +93,10 @@ module Fluent::Plugin
         @parser.parse(xml) do |time, record|
           # record["EventData"] for none parser.
           if message && !message.empty? && record["EventData"]
-            record["Description"] = if record["EventData"].length >= 2
-                                      message = message.gsub(/(%\d+)/, '\1$s')
-                                      sprintf(message, *record["EventData"])
-                                    else
-                                      # If only one EventData elements, it should be pass-through the first element into description.
-                                      record["EventData"].first
-                                    end
+            placeholdered_message = message.gsub(/(%\d+)/, '\1$s')
+            # If there are EventData elements, it should test #sprintf first.
+            # Then, if error occurred, message is pass-through into description.
+            record["Description"] = sprintf(placeholdered_message, *record["EventData"]) rescue message.gsub(/(%\d+)/, '?')
           end
           if record["EventData"]
             h = {}
