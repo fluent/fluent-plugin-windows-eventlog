@@ -96,7 +96,12 @@ module Fluent::Plugin
             placeholdered_message = message.gsub(/(%\d+)/, '\1$s')
             # If there are EventData elements, it should test #sprintf first.
             # Then, if error occurred, message is pass-through into description.
-            record["Description"] = sprintf(placeholdered_message, *record["EventData"]) rescue message.gsub(/(%\d+)/, '?')
+            begin
+              record["Description"] = sprintf(placeholdered_message, *record["EventData"])
+            rescue => e
+              router.emit_error_event(@tag, Fluent::Engine.now, {message: message, xml: xml, eventData: record["EventData"]}, e)
+              message.gsub(/(%\d+)/, '?')
+            end
           end
           if record["EventData"]
             h = {}
