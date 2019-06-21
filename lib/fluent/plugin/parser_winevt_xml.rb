@@ -29,8 +29,24 @@ module Fluent::Plugin
       (doc/'Event'/'EventData'/'Data').each do |elem|
         record["EventData"] << elem.text
       end
+      (doc/'Event'/'UserData').each do |elem|
+        node = search_deepest_childnodes(elem)
+        node.each do |child|
+          record["EventData"] << child.text
+        end
+      end
       time = @estimate_current_event ? Fluent::EventTime.now : nil
       yield time, record
+    end
+
+    private
+
+    def search_deepest_childnodes(node)
+      unless node.children.empty?
+        search_deepest_childnodes(node.children)
+      else
+        node
+      end
     end
   end
 end
