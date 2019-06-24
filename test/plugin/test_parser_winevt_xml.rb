@@ -34,11 +34,7 @@ class WinevtXMLparserTest < Test::Unit::TestCase
                 "Computer"          => "Fluentd-Developing-Windows",
                 "UserID"            => "",
                 "Version"           => "2",
-                "EventData"         => ["S-1-5-18", "Fluentd-Developing-Windows$", "WORKGROUP", "0x3e7",
-                                        "S-1-5-18", "SYSTEM", "NT AUTHORITY", "0x3e7", "5", "Advapi  ",
-                                        "Negotiate", "-", "{00000000-0000-0000-0000-000000000000}",
-                                        "-", "-", "0", "0x344", "C:\\Windows\\System32\\services.exe",
-                                        "-", "-", "%%1833", "-", "-", "-", "%%1843", "0x0", "%%1842"]}
+                "EventData"         => ["Reserved"]}
     d.instance.parse(xml) do |time, record|
       assert_equal(expected, record)
     end

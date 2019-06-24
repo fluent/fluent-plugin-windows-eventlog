@@ -25,28 +25,9 @@ module Fluent::Plugin
       record["Computer"]              = (doc/'Event'/'System'/"Computer").text rescue nil
       record["UserID"]                = (doc/'Event'/'System'/"UserID").text rescue nil
       record["Version"]               = (doc/'Event'/'System'/'Version').text rescue nil
-      record["EventData"]             = []
-      (doc/'Event'/'EventData'/'Data').each do |elem|
-        record["EventData"] << elem.text
-      end
-      (doc/'Event'/'UserData').each do |elem|
-        node = search_deepest_childnodes(elem)
-        node.each do |child|
-          record["EventData"] << child.text
-        end
-      end
+      record["EventData"]             = ["Reserved"] # These parameters are processed in winevt_c.
       time = @estimate_current_event ? Fluent::EventTime.now : nil
       yield time, record
-    end
-
-    private
-
-    def search_deepest_childnodes(node)
-      unless node.children.empty?
-        search_deepest_childnodes(node.children)
-      else
-        node
-      end
     end
   end
 end

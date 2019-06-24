@@ -92,7 +92,7 @@ module Fluent::Plugin
       subscribe.each do |xml, message, string_inserts|
         @parser.parse(xml) do |time, record|
           # record.is_a?(Hash) for not none parser checking.
-          if message && !message.empty? && record.is_a?(Hash)
+          if message && !message.empty? && record["EventData"]
             placeholdered_message = message.gsub(/(%\d+)/, '\1$s')
             # If there are EventData elements, it should test #sprintf first.
             # Then, if error occurred, message is pass-through into description.
