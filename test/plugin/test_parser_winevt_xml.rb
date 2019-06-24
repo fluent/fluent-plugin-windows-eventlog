@@ -32,7 +32,7 @@ class WinevtXMLparserTest < Test::Unit::TestCase
                 "ThreadID"          => "24708",
                 "Channel"           => "Security",
                 "Computer"          => "Fluentd-Developing-Windows",
-                "UserID"            => "",
+                "UserID"            => nil,
                 "Version"           => "2",
                 "EventData"         => ["Reserved"]}
     d.instance.parse(xml) do |time, record|

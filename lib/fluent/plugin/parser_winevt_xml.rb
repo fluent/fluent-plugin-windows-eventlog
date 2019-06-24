@@ -23,7 +23,7 @@ module Fluent::Plugin
       record["ThreadID"]              = (doc/'Event'/'System'/'Execution').attribute("ThreadID").text rescue nil
       record["Channel"]               = (doc/'Event'/'System'/'Channel').text rescue nil
       record["Computer"]              = (doc/'Event'/'System'/"Computer").text rescue nil
-      record["UserID"]                = (doc/'Event'/'System'/"UserID").text rescue nil
+      record["UserID"]                = (doc/'Event'/'System'/'Security').attribute("UserID").text rescue nil
       record["Version"]               = (doc/'Event'/'System'/'Version').text rescue nil
       record["EventData"]             = ["Reserved"] # These parameters are processed in winevt_c.
       time = @estimate_current_event ? Fluent::EventTime.now : nil
