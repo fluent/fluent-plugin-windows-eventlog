@@ -93,16 +93,8 @@ module Fluent::Plugin
         @parser.parse(xml) do |time, record|
           # record["EventData"] for none parser checking.
           if message && !message.empty? && record["EventData"]
-            placeholdered_message = message.gsub(/(%\d+)/, '\1$s')
-            # If there are EventData elements, it should test #sprintf first.
-            # Then, if error occurred, message is pass-through into description.
-            begin
-              record["Description"] = sprintf(placeholdered_message, *string_inserts)
-              record["EventData"] = string_inserts
-            rescue => e
-              router.emit_error_event(@tag, Fluent::Engine.now, {message: message, xml: xml, eventData: string_inserts}, e)
-              message.gsub(/(%\d+)/, '?')
-            end
+            record["Description"] = message
+            record["EventData"] = string_inserts
           end
           if record["EventData"]
             h = {}
