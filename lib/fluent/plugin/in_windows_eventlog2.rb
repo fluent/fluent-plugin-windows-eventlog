@@ -89,17 +89,18 @@ module Fluent::Plugin
 
     def on_notify(ch, subscribe)
       es = Fluent::MultiEventStream.new
-      subscribe.each do |xml, message|
+      subscribe.each do |xml, message, string_inserts|
         @parser.parse(xml) do |time, record|
-          # record["EventData"] for none parser.
-          if message && !message.empty? && record["EventData"]
+          # record.is_a?(Hash) for not none parser checking.
+          if message && !message.empty? && record.is_a?(Hash)
             placeholdered_message = message.gsub(/(%\d+)/, '\1$s')
             # If there are EventData elements, it should test #sprintf first.
             # Then, if error occurred, message is pass-through into description.
             begin
-              record["Description"] = sprintf(placeholdered_message, *record["EventData"])
+              record["Description"] = sprintf(placeholdered_message, *string_inserts)
+              record["EventData"] = string_inserts
             rescue => e
-              router.emit_error_event(@tag, Fluent::Engine.now, {message: message, xml: xml, eventData: record["EventData"]}, e)
+              router.emit_error_event(@tag, Fluent::Engine.now, {message: message, xml: xml, eventData: string_inserts}, e)
               message.gsub(/(%\d+)/, '?')
             end
           end
