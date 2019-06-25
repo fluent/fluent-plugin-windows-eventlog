@@ -25,7 +25,7 @@ module Fluent::Plugin
       record["Computer"]              = (doc/'Event'/'System'/"Computer").text rescue nil
       record["UserID"]                = (doc/'Event'/'System'/'Security').attribute("UserID").text rescue nil
       record["Version"]               = (doc/'Event'/'System'/'Version').text rescue nil
-      record["EventData"]             = ["Reserved"] # These parameters are processed in winevt_c.
+      record["EventData"]             = [] # These parameters are processed in winevt_c.
       time = @estimate_current_event ? Fluent::EventTime.now : nil
       yield time, record
     end

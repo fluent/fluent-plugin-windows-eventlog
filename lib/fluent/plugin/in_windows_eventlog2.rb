@@ -91,12 +91,11 @@ module Fluent::Plugin
       es = Fluent::MultiEventStream.new
       subscribe.each do |xml, message, string_inserts|
         @parser.parse(xml) do |time, record|
-          # record["EventData"] for none parser checking.
-          if message && !message.empty? && record["EventData"]
+          # record.has_key?("EventData") for none parser checking.
+          if record.has_key?("EventData")
             record["Description"] = message
             record["EventData"] = string_inserts
-          end
-          if record["EventData"]
+
             h = {}
             @keynames.each do |k|
               type = KEY_MAP[k][1]
