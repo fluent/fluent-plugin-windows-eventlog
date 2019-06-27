@@ -149,6 +149,8 @@ If your `description` doesn't follow this format, the parsed result is only `des
 
 **NOTE:** in_windows_eventlog2 always handles EventLog records as UTF-8 characters. Users don't have to specify encoding related parameters and they are not provided.
 
+**NOTE:** When `Description` contains error message such as `The message resource is present but the message was not found in the message table.`, eventlog's resource file (.mui) related to error generating event is something wrong. This issue is also occurred in built-in Windows Event Viewer which is the part of Windows management tool.
+
 #### parameters
 
 |name      | description |
