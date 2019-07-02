@@ -1,4 +1,5 @@
 require 'helper'
+require 'fileutils'
 require 'generate-windows-event'
 
 class WindowsEventLog2InputTest < Test::Unit::TestCase
@@ -63,6 +64,63 @@ DESC
     assert_equal("65500", record["EventID"])
     assert_equal("4", record["Level"])
     assert_equal("fluent-plugins", record["ProviderName"])
+  end
+
+  class PersistBookMark < self
+    TEST_PLUGIN_STORAGE_PATH = File.join( File.dirname(File.dirname(__FILE__)), 'tmp', 'in_windows_eventlog2', 'store' )
+    CONFIG2 = config_element("ROOT", "", {"tag" => "fluent.eventlog"}, [
+                               config_element("storage", "", {
+                                                '@type' => 'local',
+                                                '@id' => 'test-02',
+                                                'path' => File.join(TEST_PLUGIN_STORAGE_PATH,
+                                                                    'json', 'test-02.json'),
+                                                'persistent' => true,
+                                              })
+                             ])
+
+    def setup
+      FileUtils.rm_rf(TEST_PLUGIN_STORAGE_PATH)
+      FileUtils.mkdir_p(File.join(TEST_PLUGIN_STORAGE_PATH, 'json'))
+      FileUtils.chmod_R(0755, File.join(TEST_PLUGIN_STORAGE_PATH, 'json'))
+    end
+
+    def test_write
+      d = create_driver(CONFIG2)
+
+      assert !File.exist?(File.join(TEST_PLUGIN_STORAGE_PATH, 'json', 'test-02.json'))
+
+      service = Fluent::Plugin::EventService.new
+
+      d.run(expect_emits: 1) do
+        service.run
+      end
+
+      assert(d.events.length >= 1)
+      event = d.events.last
+      record = event.last
+
+      prev_id = record["EventRecordID"].to_i
+      assert_equal("Application", record["Channel"])
+      assert_equal("65500", record["EventID"])
+      assert_equal("4", record["Level"])
+      assert_equal("fluent-plugins", record["ProviderName"])
+
+      assert File.exist?(File.join(TEST_PLUGIN_STORAGE_PATH, 'json', 'test-02.json'))
+
+      d2 = create_driver(CONFIG2)
+      d2.run(expect_emits: 1) do
+        service.run
+      end
+
+      assert(d2.events.length == 1) # should be tailing after previous context.
+      event2 = d2.events.last
+      record2 = event2.last
+
+      curr_id = record2["EventRecordID"].to_i
+      assert(curr_id > prev_id)
+
+      assert File.exist?(File.join(TEST_PLUGIN_STORAGE_PATH, 'json', 'test-02.json'))
+    end
   end
 
   def test_write_with_none_parser
