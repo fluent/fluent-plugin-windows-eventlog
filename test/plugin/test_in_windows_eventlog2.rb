@@ -66,6 +66,36 @@ DESC
     assert_equal("fluent-plugins", record["ProviderName"])
   end
 
+  CONFIG_KEYS = config_element("ROOT", "", {
+                                 "tag" => "fluent.eventlog",
+                                 "keys" => ["EventID", "Level", "Channel", "ProviderName"]
+                               }, [
+                                 config_element("storage", "", {
+                                                  '@type' => 'local',
+                                                  'persistent' => false
+                                                })
+                               ])
+  def test_write_with_keys
+    d = create_driver(CONFIG_KEYS)
+
+    service = Fluent::Plugin::EventService.new
+
+    d.run(expect_emits: 1) do
+      service.run
+    end
+
+    assert(d.events.length >= 1)
+    event = d.events.last
+    record = event.last
+
+    expected = {"EventID"      => "65500",
+                "Level"        => "4",
+                "Channel"      => "Application",
+                "ProviderName" => "fluent-plugins"}
+
+    assert_equal(expected, record)
+  end
+
   class PersistBookMark < self
     TEST_PLUGIN_STORAGE_PATH = File.join( File.dirname(File.dirname(__FILE__)), 'tmp', 'in_windows_eventlog2', 'store' )
     CONFIG2 = config_element("ROOT", "", {"tag" => "fluent.eventlog"}, [
