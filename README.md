@@ -13,7 +13,9 @@
 
 ### in_windows_eventlog
 
-#### fluentd Input plugin for the Windows Event Log
+Check [in_windows_eventlog2](https://github.com/fluent/fluent-plugin-windows-eventlog#in_windows_eventlog2) first. `in_windows_eventlog` will be replaced with `in_windows_eventlog2`.
+
+#### fluentd Input plugin for the Windows Event Log using old Windows Event Logging API
 
     <source>
       @type windows_eventlog
@@ -128,7 +130,7 @@ If your `description` doesn't follow this format, the parsed result is only `des
 
 ### in_windows_eventlog2
 
-#### fluentd Input plugin for the Windows Event Log
+#### fluentd Input plugin for the Windows Event Log using newer Windows Event Logging API
 
     <source>
       @type windows_eventlog2
@@ -161,7 +163,7 @@ If your `description` doesn't follow this format, the parsed result is only `des
 |`from_encoding`    | (option) Input character encoding. `nil` as default.|
 |`<storage>`        | Setting for `storage` plugin for recording read position like `in_tail`'s `pos_file`.|
 |`<parse>`          | Setting for `parser` plugin for parsing raw XML EventLog records. |
-|`parse_description`| (option) parse `description` field and set parsed result into the record. `parse` and `string_inserts` fields are removed|
+|`parse_description`| (option) parse `description` field and set parsed result into the record. `Description` and `EventData` fields are removed|
 
 ##### Available keys
 
