@@ -23,7 +23,10 @@ unless ENV.has_key?('VERBOSE')
 end
 
 require 'fluent/test/driver/input'
+require 'fluent/test/driver/parser'
 require 'fluent/plugin/in_windows_eventlog'
+require 'fluent/plugin/in_windows_eventlog2'
+require 'fluent/plugin/parser_winevt_xml'
 
 class Test::Unit::TestCase
 end
