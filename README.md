@@ -7,7 +7,7 @@
 [Fluentd](http://fluentd.org) plugin to read the Windows Event Log.
 
 ## Installation
-    gem install fluent-plugin-windows-eventlog
+    ridk exec gem install fluent-plugin-windows-eventlog
 
 ## Configuration
 
