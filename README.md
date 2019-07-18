@@ -4,7 +4,7 @@
 
 ### fluentd Input plugin for the Windows Event Log
 
-[Fluentd](http://fluentd.org) plugin to read the Windows Event Log.
+[Fluentd](https://www.fluentd.org/) plugin to read the Windows Event Log.
 
 ## Installation
     ridk exec gem install fluent-plugin-windows-eventlog
@@ -15,7 +15,7 @@
 
 Check [in_windows_eventlog2](https://github.com/fluent/fluent-plugin-windows-eventlog#in_windows_eventlog2) first. `in_windows_eventlog` will be replaced with `in_windows_eventlog2`.
 
-#### fluentd Input plugin for the Windows Event Log using old Windows Event Logging API
+fluentd Input plugin for the Windows Event Log using old Windows Event Logging API
 
     <source>
       @type windows_eventlog
@@ -130,7 +130,7 @@ If your `description` doesn't follow this format, the parsed result is only `des
 
 ### in_windows_eventlog2
 
-#### fluentd Input plugin for the Windows Event Log using newer Windows Event Logging API
+fluentd Input plugin for the Windows Event Log using newer Windows Event Logging API. This is successor to `in_windows_eventlog`. See also [this slide](https://www.slideshare.net/cosmo0920/fluentd-meetup-2019) for the details of `in_windows_eventlog2` plugin.
 
     <source>
       @type windows_eventlog2
