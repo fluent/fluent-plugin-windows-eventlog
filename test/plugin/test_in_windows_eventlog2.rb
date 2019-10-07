@@ -25,6 +25,7 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
     assert_equal 2, d.instance.read_interval
     assert_equal ['application'], d.instance.channels
     assert_false d.instance.read_from_head
+    assert_true d.instance.render_as_xml
   end
 
   def test_parse_desc
@@ -94,6 +95,34 @@ DESC
                 "ProviderName" => "fluent-plugins"}
 
     assert_equal(expected, record)
+  end
+
+  class HashRendered < self
+    def test_write
+      d = create_driver(config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                    "render_as_xml" => false}, [
+                           config_element("storage", "", {
+                                            '@type' => 'local',
+                                            'persistent' => false
+                                          })
+                           ]))
+
+      service = Fluent::Plugin::EventService.new
+
+      d.run(expect_emits: 1) do
+        service.run
+      end
+
+      assert(d.events.length >= 1)
+      event = d.events.last
+      record = event.last
+
+      assert_false(d.instance.render_as_xml)
+      assert_equal("Application", record["Channel"])
+      assert_equal("65500", record["EventID"])
+      assert_equal("4", record["Level"])
+      assert_equal("fluent-plugins", record["ProviderName"])
+    end
   end
 
   class PersistBookMark < self
