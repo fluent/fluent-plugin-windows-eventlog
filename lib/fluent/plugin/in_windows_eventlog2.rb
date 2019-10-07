@@ -36,6 +36,7 @@ module Fluent::Plugin
     config_param :read_from_head, :bool, default: false
     config_param :parse_description, :bool, default: false
     config_param :render_as_xml, :bool, default: true
+    config_param :rate_limit, :integer, default: Winevt::EventLog::Subscribe::RATE_INFINITE
 
     config_section :storage do
       config_set_default :usage, "bookmarks"
@@ -89,6 +90,7 @@ module Fluent::Plugin
         subscribe.tail = @tailing
         subscribe.subscribe(ch, "*", bookmark)
         subscribe.render_as_xml = @render_as_xml
+        subscribe.rate_limit = @rate_limit
         timer_execute("in_windows_eventlog_#{escape_channel(ch)}".to_sym, @read_interval) do
           on_notify(ch, subscribe)
         end
