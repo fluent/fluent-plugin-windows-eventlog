@@ -138,6 +138,8 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
       channels application,system
       read_interval 2
       tag winevt.raw
+      render_as_xml false       # default is true.
+      rate_limit 200            # default is -1(Winevt::EventLog::Subscribe::RATE_INFINITE).
       <storage>
         @type local             # @type local is the default.
         persistent true         # default is true. Set to false to use in-memory storage.
@@ -152,6 +154,10 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 **NOTE:** in_windows_eventlog2 always handles EventLog records as UTF-8 characters. Users don't have to specify encoding related parameters and they are not provided.
 
 **NOTE:** When `Description` contains error message such as `The message resource is present but the message was not found in the message table.`, eventlog's resource file (.mui) related to error generating event is something wrong. This issue is also occurred in built-in Windows Event Viewer which is the part of Windows management tool.
+
+**NOTE:** When `render_as_xml` as `false`, the dependent winevt_c gem renders Windows EventLog as Ruby Hash object directly. This reduces bottleneck to consume EventLog. Specifying `render_as_xml` as `false` should be faster consuming than `render_as_xml` as `true` case.
+
+**NOTE:** If you encountered CPU spike due to massively huge EventLog channel, `rate_limit` parameter may help you. Currently, this paramter can handle the multiples of 10 or -1(`Winevt::EventLog::Subscribe::RATE_INFINITE`).
 
 #### parameters
 
