@@ -130,6 +130,8 @@ module Fluent::Plugin
             parse_desc(h) if @parse_description
             es.add(Fluent::Engine.now, h)
           else
+            record["Description"] = message
+            record["EventData"] = string_inserts
             # for none parser
             es.add(Fluent::Engine.now, record)
           end
