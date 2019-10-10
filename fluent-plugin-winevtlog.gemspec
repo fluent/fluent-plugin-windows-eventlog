@@ -24,4 +24,5 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "win32-eventlog"
   spec.add_runtime_dependency "winevt_c", ">= 0.6.0"
   spec.add_runtime_dependency "nokogiri", "~> 1.10"
+  spec.add_runtime_dependency "fluent-plugin-parser-winevt_xml", ">= 0.1.2"
 end
