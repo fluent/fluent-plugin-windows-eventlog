@@ -207,5 +207,8 @@ DESC
       # record should be {message: <RAW XML EventLog>}.
       record["message"]
     end
+
+    assert_true(record.has_key?("Description"))
+    assert_true(record.has_key?("EventData"))
   end
 end
