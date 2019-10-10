@@ -68,8 +68,10 @@ module Fluent::Plugin
       @tag = tag
       @tailing = @read_from_head ? false : true
       @bookmarks_storage = storage_create(usage: "bookmarks")
+      @winevt_xml = false
       if @render_as_xml
         @parser = parser_create
+        @winevt_xml = @parser.respond_to?(:winevt_xml?) && @parser.winevt_xml?
         class << self
           alias_method :on_notify, :on_notify_xml
         end
@@ -110,7 +112,7 @@ module Fluent::Plugin
       subscribe.each do |xml, message, string_inserts|
         @parser.parse(xml) do |time, record|
           # record.has_key?("EventData") for none parser checking.
-          if record.has_key?("EventData")
+          if @winevt_xml
             record["Description"] = message
             record["EventData"] = string_inserts
 
