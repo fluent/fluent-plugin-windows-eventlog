@@ -35,6 +35,8 @@ module Fluent::Plugin
     config_param :keys, :array, default: []
     config_param :read_from_head, :bool, default: false
     config_param :parse_description, :bool, default: false
+    config_param :render_as_xml, :bool, default: true
+    config_param :rate_limit, :integer, default: Winevt::EventLog::Subscribe::RATE_INFINITE
 
     config_section :storage do
       config_set_default :usage, "bookmarks"
@@ -60,12 +62,22 @@ module Fluent::Plugin
       if @keynames.empty?
         @keynames = KEY_MAP.keys
       end
+      @keynames.delete('Qualifiers') unless @render_as_xml
       @keynames.delete('EventData') if @parse_description
 
       @tag = tag
       @tailing = @read_from_head ? false : true
       @bookmarks_storage = storage_create(usage: "bookmarks")
-      @parser = parser_create
+      if @render_as_xml
+        @parser = parser_create
+        class << self
+          alias_method :on_notify, :on_notify_xml
+        end
+      else
+        class << self
+          alias_method :on_notify, :on_notify_hash
+        end
+      end
     end
 
     def start
@@ -77,6 +89,8 @@ module Fluent::Plugin
         bookmark = Winevt::EventLog::Bookmark.new(bookmarkXml)
         subscribe.tail = @tailing
         subscribe.subscribe(ch, "*", bookmark)
+        subscribe.render_as_xml = @render_as_xml
+        subscribe.rate_limit = @rate_limit
         timer_execute("in_windows_eventlog_#{escape_channel(ch)}".to_sym, @read_interval) do
           on_notify(ch, subscribe)
         end
@@ -88,6 +102,10 @@ module Fluent::Plugin
     end
 
     def on_notify(ch, subscribe)
+      # for safety.
+    end
+
+    def on_notify_xml(ch, subscribe)
       es = Fluent::MultiEventStream.new
       subscribe.each do |xml, message, string_inserts|
         @parser.parse(xml) do |time, record|
@@ -116,6 +134,31 @@ module Fluent::Plugin
             es.add(Fluent::Engine.now, record)
           end
         end
+      end
+      router.emit_stream(@tag, es)
+      @bookmarks_storage.put(ch, subscribe.bookmark)
+    end
+
+    def on_notify_hash(ch, subscribe)
+      es = Fluent::MultiEventStream.new
+      subscribe.each do |record, message, string_inserts|
+        record["Description"] = message
+        record["EventData"] = string_inserts
+        h = {}
+        @keynames.each do |k|
+          type = KEY_MAP[k][1]
+          value = record[KEY_MAP[k][0]]
+          h[k]=case type
+               when :string
+                 value.to_s
+               when :array
+                 value.map {|v| v.to_s}
+               else
+                 raise "Unknown value type: #{type}"
+               end
+        end
+        parse_desc(h) if @parse_description
+        es.add(Fluent::Engine.now, h)
       end
       router.emit_stream(@tag, es)
       @bookmarks_storage.put(ch, subscribe.bookmark)
