@@ -1,3 +1,9 @@
+# Release v0.4.0 - 2019/10/10
+
+* in_windows_eventlog2: Add new `render_as_xml` parameter to switch rendering as XML or Ruby Hash object
+* in_windows_eventlog2: Support rate limit with `rate_limit` option
+* parser_winevt_xml: Separate `parser_winevt_xml` plugin to other repository and published as Fluentd parser plugin
+
 # Release v0.3.0 - 2019/07/08
 
 * Add new `in_windows_eventlog2` plugin. This plugin uses newer windows event logging API.
