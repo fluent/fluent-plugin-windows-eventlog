@@ -21,6 +21,7 @@ module Fluent::Plugin
                "EventRecordID"     => ["EventRecordID",         :string],
                "ActivityID"        => ["ActivityID",            :string],
                "RelatedActivityID" => ["RelatedActivityID",     :string],
+               "ProcessID"         => ["ProcessID",             :string],
                "ThreadID"          => ["ThreadID",              :string],
                "Channel"           => ["Channel",               :string],
                "Computer"          => ["Computer",              :string],
