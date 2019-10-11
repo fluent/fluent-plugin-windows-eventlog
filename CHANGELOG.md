@@ -1,3 +1,6 @@
+# Release v0.4.1 - 2019/10/11
+* in_windows_eventlog2: Add a missing ProcessID record
+
 # Release v0.4.0 - 2019/10/10
 
 * in_windows_eventlog2: Add new `render_as_xml` parameter to switch rendering as XML or Ruby Hash object
