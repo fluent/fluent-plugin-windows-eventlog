@@ -1,3 +1,6 @@
+# Release v0.4.2 - 2019/10/16
+* in_windows_eventlog2: Handle invalid data error from `Winevt::EventLog::Query::Error`
+
 # Release v0.4.1 - 2019/10/11
 * in_windows_eventlog2: Add a missing ProcessID record
 
