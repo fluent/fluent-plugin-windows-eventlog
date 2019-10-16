@@ -58,7 +58,7 @@ DESC
     end
 
     assert(d.events.length >= 1)
-    event = d.events.last
+    event = d.events.select {|e| e.last["EventID"] == "65500" }.last
     record = event.last
 
     assert_equal("Application", record["Channel"])
@@ -114,7 +114,7 @@ DESC
       end
 
       assert(d.events.length >= 1)
-      event = d.events.last
+      event = d.events.select {|e| e.last["EventID"] == "65500" }.last
       record = event.last
 
       assert_false(d.instance.render_as_xml)
@@ -155,7 +155,7 @@ DESC
       end
 
       assert(d.events.length >= 1)
-      event = d.events.last
+      event = d.events.select {|e| e.last["EventID"] == "65500" }.last
       record = event.last
 
       prev_id = record["EventRecordID"].to_i
