@@ -110,35 +110,40 @@ module Fluent::Plugin
 
     def on_notify_xml(ch, subscribe)
       es = Fluent::MultiEventStream.new
-      subscribe.each do |xml, message, string_inserts|
-        @parser.parse(xml) do |time, record|
-          # record.has_key?("EventData") for none parser checking.
-          if @winevt_xml
-            record["Description"] = message
-            record["EventData"] = string_inserts
+      begin
+        subscribe.each do |xml, message, string_inserts|
+          @parser.parse(xml) do |time, record|
+            # record.has_key?("EventData") for none parser checking.
+            if @winevt_xml
+              record["Description"] = message
+              record["EventData"] = string_inserts
 
-            h = {}
-            @keynames.each do |k|
-              type = KEY_MAP[k][1]
-              value = record[KEY_MAP[k][0]]
-              h[k]=case type
-                   when :string
-                     value.to_s
-                   when :array
-                     value.map {|v| v.to_s}
-                   else
-                     raise "Unknown value type: #{type}"
-                   end
+              h = {}
+              @keynames.each do |k|
+                type = KEY_MAP[k][1]
+                value = record[KEY_MAP[k][0]]
+                h[k]=case type
+                     when :string
+                       value.to_s
+                     when :array
+                       value.map {|v| v.to_s}
+                     else
+                       raise "Unknown value type: #{type}"
+                     end
+              end
+              parse_desc(h) if @parse_description
+              es.add(Fluent::Engine.now, h)
+            else
+              record["Description"] = message
+              record["EventData"] = string_inserts
+              # for none parser
+              es.add(Fluent::Engine.now, record)
             end
-            parse_desc(h) if @parse_description
-            es.add(Fluent::Engine.now, h)
-          else
-            record["Description"] = message
-            record["EventData"] = string_inserts
-            # for none parser
-            es.add(Fluent::Engine.now, record)
           end
         end
+      rescue Winevt::EventLog::Query::Error => e
+        log.warn "Invalid XML data", error: e
+        log.warn_backtrace
       end
       router.emit_stream(@tag, es)
       @bookmarks_storage.put(ch, subscribe.bookmark)
@@ -146,24 +151,29 @@ module Fluent::Plugin
 
     def on_notify_hash(ch, subscribe)
       es = Fluent::MultiEventStream.new
-      subscribe.each do |record, message, string_inserts|
-        record["Description"] = message
-        record["EventData"] = string_inserts
-        h = {}
-        @keynames.each do |k|
-          type = KEY_MAP[k][1]
-          value = record[KEY_MAP[k][0]]
-          h[k]=case type
-               when :string
-                 value.to_s
-               when :array
-                 value.map {|v| v.to_s}
-               else
-                 raise "Unknown value type: #{type}"
-               end
+      begin
+        subscribe.each do |record, message, string_inserts|
+          record["Description"] = message
+          record["EventData"] = string_inserts
+          h = {}
+          @keynames.each do |k|
+            type = KEY_MAP[k][1]
+            value = record[KEY_MAP[k][0]]
+            h[k]=case type
+                 when :string
+                   value.to_s
+                 when :array
+                   value.map {|v| v.to_s}
+                 else
+                   raise "Unknown value type: #{type}"
+                 end
+          end
+          parse_desc(h) if @parse_description
+          es.add(Fluent::Engine.now, h)
         end
-        parse_desc(h) if @parse_description
-        es.add(Fluent::Engine.now, h)
+      rescue Winevt::EventLog::Query::Error => e
+        log.warn "Invalid Hash data", error: e
+        log.warn_backtrace
       end
       router.emit_stream(@tag, es)
       @bookmarks_storage.put(ch, subscribe.bookmark)

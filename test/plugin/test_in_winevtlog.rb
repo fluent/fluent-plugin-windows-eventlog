@@ -38,7 +38,7 @@ class WindowsEventLogInputTest < Test::Unit::TestCase
     end
 
     assert(d.events.length >= 1)
-    event = d.events.last
+    event = d.events.select {|e| e.last["event_id"] == "65500" }.last
     record = event.last
     assert_equal("application", record["channel"])
     assert_equal("65500", record["event_id"])
