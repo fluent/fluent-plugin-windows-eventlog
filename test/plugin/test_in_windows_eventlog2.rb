@@ -48,6 +48,33 @@ DESC
     assert_equal(expected, h)
   end
 
+  def test_parse_privileges_description
+    d = create_driver
+    desc = <<-DESC
+Special privileges assigned to new logon.\r\n\r\nSubject:\r\n\tSecurity ID:\t\tS-X-Y-ZZ\r\n\tAccountName:\t\tSYSTEM\r\n\tAccount Domain:\t\tNT AUTHORITY\r\n\tLogon ID:\t\t0x3E7\r\n\r\nPrivileges:\t\tSeAssignPrimaryTokenPrivilege\r\n\t\t\tSeTcbPrivilege\r\n\t\t\tSeSecurityPrivilege\r\n\t\t\tSeTakeOwnershipPrivilege\r\n\t\t\tSeLoadDriverPrivilege\r\n\t\t\tSeBackupPrivilege\r\n\t\t\tSeRestorePrivilege\r\n\t\t\tSeDebugPrivilege\r\n\t\t\tSeAuditPrivilege\r\n\t\t\tSeSystemEnvironmentPrivilege\r\n\t\t\tSeImpersonatePrivilege\r\n\t\t\tSeDelegateSessionUserImpersonatePrivilege"
+DESC
+    h = {"Description" => desc}
+    expected = {"DescriptionTitle"       => "Special privileges assigned to new logon.",
+                "subject.security_id"    => "S-X-Y-ZZ",
+                "subject.accountname"    => "SYSTEM",
+                "subject.account_domain" => "NT AUTHORITY",
+                "subject.logon_id"       => "0x3E7",
+                "privileges"             => ["SeAssignPrimaryTokenPrivilege",
+                                             "SeTcbPrivilege",
+                                             "SeSecurityPrivilege",
+                                             "SeTakeOwnershipPrivilege",
+                                             "SeLoadDriverPrivilege",
+                                             "SeBackupPrivilege",
+                                             "SeRestorePrivilege",
+                                             "SeDebugPrivilege",
+                                             "SeAuditPrivilege",
+                                             "SeSystemEnvironmentPrivilege",
+                                             "SeImpersonatePrivilege",
+                                             "SeDelegateSessionUserImpersonatePrivilege\""]}
+    d.instance.parse_desc(h)
+    assert_equal(expected, h)
+  end
+
   def test_write
     d = create_driver
 
