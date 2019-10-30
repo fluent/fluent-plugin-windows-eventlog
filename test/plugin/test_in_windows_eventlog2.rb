@@ -180,6 +180,21 @@ DESC
 
       assert File.exist?(File.join(TEST_PLUGIN_STORAGE_PATH, 'json', 'test-02.json'))
     end
+
+    def test_start_with_invalid_bookmark
+      invalid_storage_contents = <<-EOS
+<BookmarkList>\r\n  <Bookmark Channel='Application' RecordId='20063' IsCurrent='true'/>\r\n
+EOS
+      d = create_driver(CONFIG2)
+      storage = d.instance.instance_variable_get(:@bookmarks_storage)
+      storage.put('application', invalid_storage_contents)
+      assert File.exist?(File.join(TEST_PLUGIN_STORAGE_PATH, 'json', 'test-02.json'))
+
+      d2 = create_driver(CONFIG2)
+      assert_raise(Fluent::ConfigError) do
+        d2.instance.start
+      end
+    end
   end
 
   def test_write_with_none_parser
