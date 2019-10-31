@@ -50,9 +50,14 @@ DESC
 
   def test_parse_privileges_description
     d = create_driver
-    desc = <<-DESC
-Special privileges assigned to new logon.\r\n\r\nSubject:\r\n\tSecurity ID:\t\tS-X-Y-ZZ\r\n\tAccountName:\t\tSYSTEM\r\n\tAccount Domain:\t\tNT AUTHORITY\r\n\tLogon ID:\t\t0x3E7\r\n\r\nPrivileges:\t\tSeAssignPrimaryTokenPrivilege\r\n\t\t\tSeTcbPrivilege\r\n\t\t\tSeSecurityPrivilege\r\n\t\t\tSeTakeOwnershipPrivilege\r\n\t\t\tSeLoadDriverPrivilege\r\n\t\t\tSeBackupPrivilege\r\n\t\t\tSeRestorePrivilege\r\n\t\t\tSeDebugPrivilege\r\n\t\t\tSeAuditPrivilege\r\n\t\t\tSeSystemEnvironmentPrivilege\r\n\t\t\tSeImpersonatePrivilege\r\n\t\t\tSeDelegateSessionUserImpersonatePrivilege"
-DESC
+    desc = ["Special privileges assigned to new logon.\r\n\r\nSubject:\r\n\tSecurity ID:\t\tS-X-Y-ZZ\r\n\t",
+            "AccountName:\t\tSYSTEM\r\n\tAccount Domain:\t\tNT AUTHORITY\r\n\tLogon ID:\t\t0x3E7\r\n\r\n",
+            "Privileges:\t\tSeAssignPrimaryTokenPrivilege\r\n\t\t\tSeTcbPrivilege\r\n\t\t\t",
+            "SeSecurityPrivilege\r\n\t\t\tSeTakeOwnershipPrivilege\r\n\t\t\tSeLoadDriverPrivilege\r\n\t\t\t",
+            "SeBackupPrivilege\r\n\t\t\tSeRestorePrivilege\r\n\t\t\tSeDebugPrivilege\r\n\t\t\t",
+            "SeAuditPrivilege\r\n\t\t\tSeSystemEnvironmentPrivilege\r\n\t\t\tSeImpersonatePrivilege\r\n\t\t\t",
+            "SeDelegateSessionUserImpersonatePrivilege"].join("")
+
     h = {"Description" => desc}
     expected = {"DescriptionTitle"       => "Special privileges assigned to new logon.",
                 "subject.security_id"    => "S-X-Y-ZZ",
@@ -70,7 +75,7 @@ DESC
                                              "SeAuditPrivilege",
                                              "SeSystemEnvironmentPrivilege",
                                              "SeImpersonatePrivilege",
-                                             "SeDelegateSessionUserImpersonatePrivilege\""]}
+                                             "SeDelegateSessionUserImpersonatePrivilege"]}
     d.instance.parse_desc(h)
     assert_equal(expected, h)
   end
