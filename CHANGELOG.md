@@ -1,3 +1,7 @@
+# Release v0.4.3 - 2019/10/31
+* in_windows_eventlog2: Handle privileges record on #parse_desc
+* in_windows_eventlog2: Raise error when handling invalid bookmark xml
+
 # Release v0.4.2 - 2019/10/16
 * in_windows_eventlog2: Handle invalid data error from `Winevt::EventLog::Query::Error`
 
