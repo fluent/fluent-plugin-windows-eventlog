@@ -225,6 +225,8 @@ module Fluent::Plugin
               record[k] = value
             end
           end
+          # XXX: This is for empty privileges record key.
+          # We should investigate whether an another case exists or not.
           previous_key = to_key(key) unless key.empty?
         }
       }
