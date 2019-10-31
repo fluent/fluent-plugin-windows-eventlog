@@ -89,9 +89,17 @@ module Fluent::Plugin
       @chs.each do |ch|
         bookmarkXml = @bookmarks_storage.get(ch) || ""
         subscribe = Winevt::EventLog::Subscribe.new
-        bookmark = Winevt::EventLog::Bookmark.new(bookmarkXml)
+        bookmark = unless bookmarkXml.empty?
+                     Winevt::EventLog::Bookmark.new(bookmarkXml)
+                   else
+                     nil
+                   end
         subscribe.tail = @tailing
-        subscribe.subscribe(ch, "*", bookmark)
+        begin
+          subscribe.subscribe(ch, "*", bookmark)
+        rescue Winevt::EventLog::Query::Error => e
+          raise Fluent::ConfigError, "Invalid Bookmark XML is loaded. #{e}"
+        end
         subscribe.render_as_xml = @render_as_xml
         subscribe.rate_limit = @rate_limit
         timer_execute("in_windows_eventlog_#{escape_channel(ch)}".to_sym, @read_interval) do
