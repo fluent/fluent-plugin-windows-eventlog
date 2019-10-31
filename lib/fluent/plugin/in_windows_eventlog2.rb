@@ -225,7 +225,7 @@ module Fluent::Plugin
               record[k] = value
             end
           end
-          previous_key = key unless key.empty?
+          previous_key = to_key(key) unless key.empty?
         }
       }
     end
