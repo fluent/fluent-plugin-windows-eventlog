@@ -200,6 +200,7 @@ module Fluent::Plugin
 
       elems = desc.split(GROUP_DELIMITER)
       record['DescriptionTitle'] = elems.shift
+      previous_key = nil
       elems.each { |elem|
         parent_key = nil
         elem.split(RECORD_DELIMITER).each { |r|
@@ -214,13 +215,19 @@ module Fluent::Plugin
           else
             # parsed value sometimes contain unexpected "\t". So remove it.
             value.strip!
-            if parent_key.nil?
+            # merge empty key values into the previous non-empty key record.
+            if key.empty?
+              record[previous_key] = [record[previous_key], value].flatten
+            elsif parent_key.nil?
               record[to_key(key)] = value
             else
               k = "#{parent_key}.#{to_key(key)}"
               record[k] = value
             end
           end
+          # XXX: This is for empty privileges record key.
+          # We should investigate whether an another case exists or not.
+          previous_key = to_key(key) unless key.empty?
         }
       }
     end
