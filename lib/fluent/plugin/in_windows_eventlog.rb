@@ -151,7 +151,11 @@ module Fluent::Plugin
     end
 
     def on_notify(ch)
-      el = Win32::EventLog.open(ch)
+      begin
+        el = Win32::EventLog.open(ch)
+      rescue => e
+        log.error "Failed to open Windows Event log.", error: e
+      end
 
       current_oldest_record_number = el.oldest_record_number
       current_total_records = el.total_records
@@ -186,7 +190,9 @@ module Fluent::Plugin
       receive_lines(ch, winlogs)
       @pos_storage.put(ch, [read_start, read_num + winlogs.size])
     ensure
-      el.close
+      if el
+        el.close
+      end
     end
 
     GROUP_DELIMITER = "\r\n\r\n".freeze
