@@ -1,3 +1,6 @@
+# Release v0.4.4 - 2019/11/07
+* in_windows_eventlog: Improve error handling and logging when failed to open Windows Event Log.
+
 # Release v0.4.3 - 2019/10/31
 * in_windows_eventlog2: Handle privileges record on #parse_desc
 * in_windows_eventlog2: Raise error when handling invalid bookmark xml
