@@ -217,7 +217,7 @@ module Fluent::Plugin
             value.strip!
             # merge empty key values into the previous non-empty key record.
             if key.empty?
-              record[previous_key] = [record[previous_key], value].flatten
+              record[previous_key] = [record[previous_key], value].flatten.reject {|e| e.nil?}
             elsif parent_key.nil?
               record[to_key(key)] = value
             else
