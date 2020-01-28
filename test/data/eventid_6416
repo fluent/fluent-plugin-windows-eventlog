@@ -1,0 +1,27 @@
+A new external device was recognized by the system.
+
+Subject:
+	Security ID:		SYSTEM
+	Account Name:		IIZHU2016$
+	Account Domain:		ITSS
+	Logon ID:		0x3E7
+
+Device ID:	SWD\PRINTENUM\{60FA1C6A-1AB2-440A-AEE1-62ABFB9A4650}
+
+Device Name:	Microsoft Print to PDF
+
+Class ID:		{1ed2bbf9-11f0-4084-b21f-ad83a8e6dcdc}
+
+Class Name:	PrintQueue
+
+Vendor IDs:
+		PRINTENUM\{084f01fa-e634-4d77-83ee-074817c03581}
+		PRINTENUM\LocalPrintQueue
+		{084f01fa-e634-4d77-83ee-074817c03581}
+
+
+
+Compatible IDs:
+		GenPrintQueue
+		SWD\GenericRaw
+		SWD\Generic

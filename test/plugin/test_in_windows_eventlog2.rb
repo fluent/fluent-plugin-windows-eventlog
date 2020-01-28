@@ -80,6 +80,31 @@ DESC
     assert_equal(expected, h)
   end
 
+  test "A new external device was recognized by the system." do
+    # using the event log example: eventopedia.cloudapp.net/EventDetails.aspx?id=17ef124e-eb89-4c01-9ba2-d761e06b2b68
+    d = create_driver
+    desc = nil
+    File.open('./test/data/eventid_6416', 'r') do |f|
+      desc = f.read.gsub(/\R/, "\r\n")
+    end
+    h = {"Description" => desc}
+    expected = {"DescriptionTitle"       => "A new external device was recognized by the system.",
+                "class_id"               => "{1ed2bbf9-11f0-4084-b21f-ad83a8e6dcdc}",
+                "class_name"             => "PrintQueue",
+                "compatible_ids"         => ["GenPrintQueue", "SWD\\GenericRaw", "SWD\\Generic"],
+                "device_id"              => "SWD\\PRINTENUM\\{60FA1C6A-1AB2-440A-AEE1-62ABFB9A4650}",
+                "device_name"            => "Microsoft Print to PDF",
+                "subject.account_domain" => "ITSS",
+                "subject.account_name"   => "IIZHU2016$",
+                "subject.logon_id"       => "0x3E7",
+                "subject.security_id"    => "SYSTEM",
+                "vendor_ids"             => ["PRINTENUM\\{084f01fa-e634-4d77-83ee-074817c03581}",
+                                             "PRINTENUM\\LocalPrintQueue",
+                                             "{084f01fa-e634-4d77-83ee-074817c03581}"]}
+    d.instance.parse_desc(h)
+    assert_equal(expected, h)
+  end
+
   def test_write
     d = create_driver
 
