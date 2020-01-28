@@ -1,3 +1,6 @@
+# Release v0.4.5 - 2020/01/28
+* in_windows_eventlog2: Handle empty key case in parsing description method.
+
 # Release v0.4.4 - 2019/11/07
 * in_windows_eventlog: Improve error handling and logging when failed to open Windows Event Log.
 
