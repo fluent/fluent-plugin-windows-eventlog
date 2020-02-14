@@ -109,7 +109,7 @@ module Fluent::Plugin
     end
 
     def escape_channel(ch)
-      ch.gsub(/[^a-zA-Z0-9]/, '_')
+      ch.gsub(/[^a-zA-Z0-9\s]/, '_')
     end
 
     def on_notify(ch, subscribe)
