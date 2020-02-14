@@ -107,11 +107,11 @@ module Fluent::Plugin
       super
 
       @chs.each do |ch, read_existing_events|
-        subscribe_channels(ch, read_existing_events)
+        subscribe_channel(ch, read_existing_events)
       end
     end
 
-    def subscribe_channels(ch, read_existing_events)
+    def subscribe_channel(ch, read_existing_events)
       bookmarkXml = @bookmarks_storage.get(ch) || ""
       subscribe = Winevt::EventLog::Subscribe.new
       bookmark = unless bookmarkXml.empty?
