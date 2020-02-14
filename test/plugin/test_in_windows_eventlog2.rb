@@ -28,6 +28,46 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
     assert_true d.instance.render_as_xml
   end
 
+  sub_test_case "configure" do
+    test "subscribe directive" do
+      d = create_driver config_element("ROOT", "", {"tag" => "fluent.eventlog"}, [
+                                         config_element("storage", "", {
+                                                          '@type' => 'local',
+                                                          'persistent' => false
+                                                        }),
+                                         config_element("subscribe", "", {
+                                                          'channels' => ['System', 'Windows PowerShell'],
+                                                        }),
+                                         config_element("subscribe", "", {
+                                                          'channels' => ['Security'],
+                                                          'read_existing_events' => true
+                                                        }),
+                                       ])
+      expected = [["system", false], ["windows powershell", false], ["security", true]]
+      assert_equal expected, d.instance.instance_variable_get(:@chs)
+    end
+
+    test "duplicated subscribe" do
+      d = create_driver config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                    "channels" => ["System", "Windows PowerShell"]
+                                                   }, [
+                                         config_element("storage", "", {
+                                                          '@type' => 'local',
+                                                          'persistent' => false
+                                                        }),
+                                         config_element("subscribe", "", {
+                                                          'channels' => ['System', 'Windows PowerShell'],
+                                                        }),
+                                         config_element("subscribe", "", {
+                                                          'channels' => ['Security'],
+                                                          'read_existing_events' => true
+                                                        }),
+                                       ])
+      expected = [["system", false], ["windows powershell", false], ["security", true]]
+      assert_equal expected, d.instance.instance_variable_get(:@chs)
+    end
+  end
+
   data("application"        => ["Application", "Application"],
        "windows powershell" => ["Windows PowerShell", "Windows PowerShell"],
        "escaped"            => ["Should_Be_Escaped_", "Should+Be;Escaped/"]
