@@ -28,6 +28,16 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
     assert_true d.instance.render_as_xml
   end
 
+  data("application"        => ["Application", "Application"],
+       "windows powershell" => ["Windows PowerShell", "Windows PowerShell"],
+       "escaped"            => ["Should_Be_Escaped_", "Should+Be;Escaped/"]
+      )
+  def test_escape_channel(data)
+    expected, actual = data
+    d = create_driver CONFIG
+    assert_equal expected, d.instance.escape_channel(actual)
+  end
+
   def test_parse_desc
     d = create_driver
     desc =<<-DESC
