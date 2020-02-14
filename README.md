@@ -174,6 +174,7 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 |`from_encoding`    | (option) Input character encoding. `nil` as default.|
 |`<storage>`        | Setting for `storage` plugin for recording read position like `in_tail`'s `pos_file`.|
 |`<parse>`          | Setting for `parser` plugin for parsing raw XML EventLog records. |
+|`parse_description`| (option) parse `description` field and set parsed result into the record. `Description` and `EventData` fields are removed|
 |`read_from_head`   | **Deprecated** (option) Start to read the entries from the oldest, not from when fluentd is started. Defaults to `false`.|
 |`read_existing_events` | (option) Read the entries which already exist before fluentd is started. Defaults to `false`.|
 |`read_existing_events` | (option) Read the entries which already exist before fluentd is started. Defaults to `false`.|
