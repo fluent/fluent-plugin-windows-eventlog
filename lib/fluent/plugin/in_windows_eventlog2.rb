@@ -32,7 +32,7 @@ module Fluent::Plugin
 
     config_param :tag, :string
     config_param :read_interval, :time, default: 2
-    config_param :channels, :array, default: ['application']
+    config_param :channels, :array, default: []
     config_param :keys, :array, default: []
     config_param :read_from_head, :bool, default: false, deprecated: "Use `read_existing_events' instead."
     config_param :read_existing_events, :bool, default: false
@@ -64,7 +64,22 @@ module Fluent::Plugin
 
     def configure(conf)
       super
-      @chs = @channels.map {|ch| ch.strip.downcase }.uniq
+      @chs = []
+
+      @read_existing_events = @read_from_head || @read_existing_events
+      if @channels.empty? && @subscribe_configs.empty?
+        @chs.push(['application', @read_existing_events])
+      else
+        @channels.map {|ch| ch.strip.downcase }.uniq.each do |uch|
+          @chs.push([uch, @read_existing_events])
+        end
+        @subscribe_configs.each do |subscribe|
+          subscribe.channels.map {|ch| ch.strip.downcase }.uniq.each do |uch|
+            @chs.push([uch, subscribe.read_existing_events])
+          end
+        end
+      end
+      @chs.uniq!
       @keynames = @keys.map {|k| k.strip }.uniq
       if @keynames.empty?
         @keynames = KEY_MAP.keys
@@ -73,7 +88,6 @@ module Fluent::Plugin
       @keynames.delete('EventData') if @parse_description
 
       @tag = tag
-      @read_existing_events = @read_from_head || @read_existing_events
       @bookmarks_storage = storage_create(usage: "bookmarks")
       @winevt_xml = false
       if @render_as_xml
@@ -92,16 +106,8 @@ module Fluent::Plugin
     def start
       super
 
-      if !@subscribe_configs.empty?
-        @subscribe_configs.each do |subscribe|
-          subscribe.channels.map do |channel|
-            subscribe_channels(channel.strip.downcase, subscribe.read_existing_events)
-          end
-        end
-      else
-        @chs.each do |ch|
-          subscribe_channels(ch, @read_existing_events)
-        end
+      @chs.each do |ch, read_existing_events|
+        subscribe_channels(ch, read_existing_events)
       end
     end
 
