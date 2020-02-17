@@ -1,3 +1,7 @@
+# Release v0.5.0 - 2020/02/17
+* in_windows_eventlog2: Support subscribe directive to handle read_existing_events paratemer each of channels.
+* in_windows_eventlog2: Depends on winevt_c v0.7.0 or later.
+
 # Release v0.4.6 - 2020/02/15
 * Fix winevt_c dependency to prevent fetching winevt_c v0.7.0 or later.
 
