@@ -135,7 +135,8 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
     <source>
       @type windows_eventlog2
       @id windows_eventlog2
-      channels application,system
+      channels application,system # Also be able to use `<subscribe>` directive.
+      read_existing_events false
       read_interval 2
       tag winevt.raw
       render_as_xml false       # default is true.
@@ -149,6 +150,10 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
       <parse>
         @type winevt_xml # @type winevt_xml is the default. winevt_xml and none parsers are supported for now.
       </parse>
+      # <subscribe>
+      #   channles application, system
+      #   read_existing_events false # read_existing_events should be applied each of subscribe directive(s)
+      # </subscribe>
     </source>
 
 **NOTE:** in_windows_eventlog2 always handles EventLog records as UTF-8 characters. Users don't have to specify encoding related parameters and they are not provided.
@@ -163,13 +168,60 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 
 |name      | description |
 |:-----    |:-----       |
-|`channels`         | (option) 'application' as default. One or more of {'application', 'system', 'setup', 'security'}. If you want to read 'setup' or 'security' logs, you must launch fluentd with administrator privileges.|
+|`channels`         | (option) No default value just empty array, but 'application' is used as default due to backward compatibility. One or more of {'application', 'system', 'setup', 'security'}. If you want to read 'setup' or 'security' logs, you must launch fluentd with administrator privileges.|
 |`keys`             | (option) A subset of [keys](#read-keys) to read. Defaults to all keys.|
 |`read_interval`    | (option) Read interval in seconds. 2 seconds as default.|
 |`from_encoding`    | (option) Input character encoding. `nil` as default.|
 |`<storage>`        | Setting for `storage` plugin for recording read position like `in_tail`'s `pos_file`.|
 |`<parse>`          | Setting for `parser` plugin for parsing raw XML EventLog records. |
 |`parse_description`| (option) parse `description` field and set parsed result into the record. `Description` and `EventData` fields are removed|
+|`read_from_head`   | **Deprecated** (option) Start to read the entries from the oldest, not from when fluentd is started. Defaults to `false`.|
+|`read_existing_events` | (option) Read the entries which already exist before fluentd is started. Defaults to `false`.|
+|`read_existing_events` | (option) Read the entries which already exist before fluentd is started. Defaults to `false`.|
+|`rate_limit`      | (option) Specify rate limit to consume EventLog. Default is `Winevt::EventLog::Subscribe::RATE_INFINITE`.|
+|`<subscribe>`          | Setting for subscribe channels. |
+
+##### subscribe section
+
+|name      | description |
+|:-----    |:-----       |
+|`channels`             | One or more of {'application', 'system', 'setup', 'security'}. If you want to read 'setup' or 'security' logs, you must launch fluentd with administrator privileges. |
+|`read_existing_events` | (option) Read the entries which already exist before fluentd is started. Defaults to `false`. |
+
+
+**Motivation:** subscribe directive is designed for applying `read_existing_events` each of channels which is specified in subscribe section(s).
+
+e.g) The previous configuration can handle `read_existing_events` but this parameter only specifies `read_existing_events` or not for channels which are specified in `channels`.
+
+```aconf
+channels ["Application", "Security", "HardwareEvents"]
+read_existing_events true
+```
+
+is interpreted as "Application", "Security", and "HardwareEvents" should be read existing events.
+
+But some users want to configure to:
+
+* "Application" and "Security" channels just tailing
+* "HardwareEvent" channel read existing events before launching Fluentd
+
+With `<subscribe>` directive, this requirements can be represendted as:
+
+```aconf
+<subscribe>
+  channles ["Application", "Security"]
+  # read_existing_events false
+</subscribe>
+<subscribe>
+  channles ["HardwareEvent"]
+  read_existing_events true
+</subscribe>
+```
+
+This configuration can be handled as:
+
+* "Application" and "Security" channels just tailing
+* "HardwareEvent" channel read existing events before launching Fluentd
 
 ##### Available keys
 

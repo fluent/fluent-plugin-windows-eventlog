@@ -23,9 +23,72 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
     d = create_driver CONFIG
     assert_equal 'fluent.eventlog', d.instance.tag
     assert_equal 2, d.instance.read_interval
-    assert_equal ['application'], d.instance.channels
-    assert_false d.instance.read_from_head
+    assert_equal [], d.instance.channels
+    assert_false d.instance.read_existing_events
     assert_true d.instance.render_as_xml
+  end
+
+  sub_test_case "configure" do
+    test "subscribe directive" do
+      d = create_driver config_element("ROOT", "", {"tag" => "fluent.eventlog"}, [
+                                         config_element("storage", "", {
+                                                          '@type' => 'local',
+                                                          'persistent' => false
+                                                        }),
+                                         config_element("subscribe", "", {
+                                                          'channels' => ['System', 'Windows PowerShell'],
+                                                        }),
+                                         config_element("subscribe", "", {
+                                                          'channels' => ['Security'],
+                                                          'read_existing_events' => true
+                                                        }),
+                                       ])
+      expected = [["system", false], ["windows powershell", false], ["security", true]]
+      assert_equal expected, d.instance.instance_variable_get(:@chs)
+    end
+
+    test "duplicated subscribe" do
+      d = create_driver config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                    "channels" => ["System", "Windows PowerShell"]
+                                                   }, [
+                                         config_element("storage", "", {
+                                                          '@type' => 'local',
+                                                          'persistent' => false
+                                                        }),
+                                         config_element("subscribe", "", {
+                                                          'channels' => ['System', 'Windows PowerShell'],
+                                                        }),
+                                         config_element("subscribe", "", {
+                                                          'channels' => ['Security'],
+                                                          'read_existing_events' => true
+                                                        }),
+                                       ])
+      expected = [["system", false], ["windows powershell", false], ["security", true]]
+      assert_equal 1, d.instance.instance_variable_get(:@chs).select {|ch, flag| ch == "system"}.size
+      assert_equal expected, d.instance.instance_variable_get(:@chs)
+    end
+
+    test "non duplicated subscribe" do
+      d = create_driver config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                    "channels" => ["System", "Windows PowerShell"]
+                                                   }, [
+                                         config_element("storage", "", {
+                                                          '@type' => 'local',
+                                                          'persistent' => false
+                                                        }),
+                                         config_element("subscribe", "", {
+                                                          'channels' => ['System', 'Windows PowerShell'],
+                                                          'read_existing_events' => true
+                                                        }),
+                                         config_element("subscribe", "", {
+                                                          'channels' => ['Security'],
+                                                          'read_existing_events' => true
+                                                        }),
+                                       ])
+      expected = [["system", false], ["windows powershell", false], ["system", true], ["windows powershell", true], ["security", true]]
+      assert_equal 2, d.instance.instance_variable_get(:@chs).select {|ch, flag| ch == "system"}.size
+      assert_equal expected, d.instance.instance_variable_get(:@chs)
+    end
   end
 
   data("application"        => ["Application", "Application"],

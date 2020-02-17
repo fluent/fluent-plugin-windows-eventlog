@@ -32,12 +32,18 @@ module Fluent::Plugin
 
     config_param :tag, :string
     config_param :read_interval, :time, default: 2
-    config_param :channels, :array, default: ['application']
+    config_param :channels, :array, default: []
     config_param :keys, :array, default: []
-    config_param :read_from_head, :bool, default: false
+    config_param :read_from_head, :bool, default: false, deprecated: "Use `read_existing_events' instead."
+    config_param :read_existing_events, :bool, default: false
     config_param :parse_description, :bool, default: false
     config_param :render_as_xml, :bool, default: true
     config_param :rate_limit, :integer, default: Winevt::EventLog::Subscribe::RATE_INFINITE
+
+    config_section :subscribe, param_name: :subscribe_configs, required: false, multi: true do
+      config_param :channels, :array
+      config_param :read_existing_events, :bool, default: false
+    end
 
     config_section :storage do
       config_set_default :usage, "bookmarks"
@@ -58,7 +64,22 @@ module Fluent::Plugin
 
     def configure(conf)
       super
-      @chs = @channels.map {|ch| ch.strip.downcase }.uniq
+      @chs = []
+
+      @read_existing_events = @read_from_head || @read_existing_events
+      if @channels.empty? && @subscribe_configs.empty?
+        @chs.push(['application', @read_existing_events])
+      else
+        @channels.map {|ch| ch.strip.downcase }.uniq.each do |uch|
+          @chs.push([uch, @read_existing_events])
+        end
+        @subscribe_configs.each do |subscribe|
+          subscribe.channels.map {|ch| ch.strip.downcase }.uniq.each do |uch|
+            @chs.push([uch, subscribe.read_existing_events])
+          end
+        end
+      end
+      @chs.uniq!
       @keynames = @keys.map {|k| k.strip }.uniq
       if @keynames.empty?
         @keynames = KEY_MAP.keys
@@ -67,7 +88,6 @@ module Fluent::Plugin
       @keynames.delete('EventData') if @parse_description
 
       @tag = tag
-      @tailing = @read_from_head ? false : true
       @bookmarks_storage = storage_create(usage: "bookmarks")
       @winevt_xml = false
       if @render_as_xml
@@ -86,25 +106,29 @@ module Fluent::Plugin
     def start
       super
 
-      @chs.each do |ch|
-        bookmarkXml = @bookmarks_storage.get(ch) || ""
-        subscribe = Winevt::EventLog::Subscribe.new
-        bookmark = unless bookmarkXml.empty?
-                     Winevt::EventLog::Bookmark.new(bookmarkXml)
-                   else
-                     nil
-                   end
-        subscribe.tail = @tailing
-        begin
-          subscribe.subscribe(ch, "*", bookmark)
-        rescue Winevt::EventLog::Query::Error => e
-          raise Fluent::ConfigError, "Invalid Bookmark XML is loaded. #{e}"
-        end
-        subscribe.render_as_xml = @render_as_xml
-        subscribe.rate_limit = @rate_limit
-        timer_execute("in_windows_eventlog_#{escape_channel(ch)}".to_sym, @read_interval) do
-          on_notify(ch, subscribe)
-        end
+      @chs.each do |ch, read_existing_events|
+        subscribe_channel(ch, read_existing_events)
+      end
+    end
+
+    def subscribe_channel(ch, read_existing_events)
+      bookmarkXml = @bookmarks_storage.get(ch) || ""
+      subscribe = Winevt::EventLog::Subscribe.new
+      bookmark = unless bookmarkXml.empty?
+                   Winevt::EventLog::Bookmark.new(bookmarkXml)
+                 else
+                   nil
+                 end
+      subscribe.read_existing_events = read_existing_events
+      begin
+        subscribe.subscribe(ch, "*", bookmark)
+      rescue Winevt::EventLog::Query::Error => e
+        raise Fluent::ConfigError, "Invalid Bookmark XML is loaded. #{e}"
+      end
+      subscribe.render_as_xml = @render_as_xml
+      subscribe.rate_limit = @rate_limit
+      timer_execute("in_windows_eventlog_#{escape_channel(ch)}".to_sym, @read_interval) do
+        on_notify(ch, subscribe)
       end
     end
 
