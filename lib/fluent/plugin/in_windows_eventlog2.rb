@@ -139,10 +139,10 @@ module Fluent::Plugin
       parser = Nokogiri::XML::SAX::Parser.new(evtxml)
       parser.parse(bookmarkXml)
       result = evtxml.result
-      if !result.empty? && (result[:channel] == channel) && result[:is_current]
+      if !result.empty? && (result[:channel].downcase == channel.downcase) && result[:is_current]
         true
       else
-        log.warn "This stored bookmark is incomplete for using. Referring `read_existing_events` parameter to subscribe: #{bookmarkXml}"
+        log.warn "This stored bookmark is incomplete for using. Referring `read_existing_events` parameter to subscribe: #{bookmarkXml}, channel: #{channel}"
         false
       end
     end
