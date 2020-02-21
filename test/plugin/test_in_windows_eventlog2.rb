@@ -322,8 +322,10 @@ EOS
       assert File.exist?(File.join(TEST_PLUGIN_STORAGE_PATH, 'json', 'test-02.json'))
 
       d2 = create_driver(CONFIG2)
-      d2.instance.start
-      assert_equal 1, d2.logs.grep(/This stored bookmark is incomplete for using. Referring `read_existing_events` parameter to subscribe:/).length
+      assert_raise(Fluent::ConfigError) do
+        d2.instance.start
+      end
+      assert_equal 0, d2.logs.grep(/This stored bookmark is incomplete for using. Referring `read_existing_events` parameter to subscribe:/).length
     end
 
     def test_start_with_empty_bookmark
