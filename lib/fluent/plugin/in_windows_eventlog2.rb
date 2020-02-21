@@ -1,6 +1,7 @@
 require 'winevt'
 require 'fluent/plugin/input'
 require 'fluent/plugin'
+require_relative 'bookmark_sax_parser'
 
 module Fluent::Plugin
   class WindowsEventLog2Input < Input
@@ -113,12 +114,11 @@ module Fluent::Plugin
 
     def subscribe_channel(ch, read_existing_events)
       bookmarkXml = @bookmarks_storage.get(ch) || ""
+      bookmark = nil
+      if bookmark_validator(bookmarkXml, ch)
+        bookmark = Winevt::EventLog::Bookmark.new(bookmarkXml)
+      end
       subscribe = Winevt::EventLog::Subscribe.new
-      bookmark = unless bookmarkXml.empty?
-                   Winevt::EventLog::Bookmark.new(bookmarkXml)
-                 else
-                   nil
-                 end
       subscribe.read_existing_events = read_existing_events
       begin
         subscribe.subscribe(ch, "*", bookmark)
@@ -129,6 +129,21 @@ module Fluent::Plugin
       subscribe.rate_limit = @rate_limit
       timer_execute("in_windows_eventlog_#{escape_channel(ch)}".to_sym, @read_interval) do
         on_notify(ch, subscribe)
+      end
+    end
+
+    def bookmark_validator(bookmarkXml, channel)
+      return false if bookmarkXml.empty?
+
+      evtxml = WinevtBookmarkDocument.new
+      parser = Nokogiri::XML::SAX::Parser.new(evtxml)
+      parser.parse(bookmarkXml)
+      result = evtxml.result
+      if !result.empty? && (result[:channel].downcase == channel.downcase) && result[:is_current]
+        true
+      else
+        log.warn "This stored bookmark is incomplete for using. Referring `read_existing_events` parameter to subscribe: #{bookmarkXml}, channel: #{channel}"
+        false
       end
     end
 

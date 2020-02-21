@@ -25,6 +25,7 @@ end
 require 'fluent/test/driver/input'
 require 'fluent/plugin/in_windows_eventlog'
 require 'fluent/plugin/in_windows_eventlog2'
+require 'fluent/plugin/bookmark_sax_parser'
 
 class Test::Unit::TestCase
 end
