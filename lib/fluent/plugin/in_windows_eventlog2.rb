@@ -76,7 +76,7 @@ module Fluent::Plugin
       end
           
       @read_existing_events = @read_from_head || @read_existing_events
-      if @channels.empty? && @subscribe_configs.empty?
+      if @channels.empty? && @subscribe_configs.empty? && !read_all_channels
         @chs.push(['application', @read_existing_events])
       else
         @channels.map {|ch| ch.strip.downcase }.uniq.each do |uch|
