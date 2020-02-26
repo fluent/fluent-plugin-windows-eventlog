@@ -177,8 +177,8 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 |`parse_description`| (option) parse `description` field and set parsed result into the record. `Description` and `EventData` fields are removed|
 |`read_from_head`   | **Deprecated** (option) Start to read the entries from the oldest, not from when fluentd is started. Defaults to `false`.|
 |`read_existing_events` | (option) Read the entries which already exist before fluentd is started. Defaults to `false`.|
-|`read_existing_events` | (option) Read the entries which already exist before fluentd is started. Defaults to `false`.|
 |`rate_limit`      | (option) Specify rate limit to consume EventLog. Default is `Winevt::EventLog::Subscribe::RATE_INFINITE`.|
+|`read_all_channels`| (option) Read from all channels|
 |`<subscribe>`          | Setting for subscribe channels. |
 
 ##### subscribe section
