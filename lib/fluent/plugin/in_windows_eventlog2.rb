@@ -40,7 +40,7 @@ module Fluent::Plugin
     config_param :parse_description, :bool, default: false
     config_param :render_as_xml, :bool, default: true
     config_param :rate_limit, :integer, default: Winevt::EventLog::Subscribe::RATE_INFINITE
-    config_param :read_all_channels, :bool, default: true
+    config_param :read_all_channels, :bool, default: false
 
     config_section :subscribe, param_name: :subscribe_configs, required: false, multi: true do
       config_param :channels, :array
