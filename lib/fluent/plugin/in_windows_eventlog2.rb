@@ -67,7 +67,7 @@ module Fluent::Plugin
     def configure(conf)
       super
       @chs = []
-      @allChs = Winevt::EventLog::Channel.new
+      @all_chs = Winevt::EventLog::Channel.new
 
       if read_all_channels
         @allChs.each do |allChs|
