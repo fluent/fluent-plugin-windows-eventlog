@@ -116,11 +116,7 @@ module Fluent::Plugin
       super
 
       @chs.each do |ch, read_existing_events|
-        if (read_all_channels)
-          subscribe_channel(ch, read_existing_events) rescue ''
-        else 
-          subscribe_channel(ch, read_existing_events)
-        end
+        subscribe_channel(ch, read_existing_events)
       end
     end
 
