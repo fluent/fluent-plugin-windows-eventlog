@@ -69,14 +69,14 @@ module Fluent::Plugin
       @chs = []
       @all_chs = Winevt::EventLog::Channel.new
 
-      if read_all_channels
+      if @read_all_channels
         @allChs.each do |allChs|
           @chs.push(allChs)
         end
       end
           
       @read_existing_events = @read_from_head || @read_existing_events
-      if @channels.empty? && @subscribe_configs.empty? && !read_all_channels
+      if @channels.empty? && @subscribe_configs.empty? && !@read_all_channels
         @chs.push(['application', @read_existing_events])
       else
         @channels.map {|ch| ch.strip.downcase }.uniq.each do |uch|
