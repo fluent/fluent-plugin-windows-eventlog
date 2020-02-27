@@ -68,10 +68,11 @@ module Fluent::Plugin
       super
       @chs = []
       @all_chs = Winevt::EventLog::Channel.new
+      @all_chs.force_enumerate = false
 
       if @read_all_channels
-        @allChs.each do |allChs|
-          @chs.push(allChs)
+        @all_chs.each do |all_chs|
+          @chs.push(all_chs)
         end
       end
           
