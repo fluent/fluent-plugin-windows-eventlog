@@ -40,6 +40,7 @@ module Fluent::Plugin
     config_param :parse_description, :bool, default: false
     config_param :render_as_xml, :bool, default: true
     config_param :rate_limit, :integer, default: Winevt::EventLog::Subscribe::RATE_INFINITE
+    config_param :read_all_channels, :bool, default: false
 
     config_section :subscribe, param_name: :subscribe_configs, required: false, multi: true do
       config_param :channels, :array
@@ -66,9 +67,18 @@ module Fluent::Plugin
     def configure(conf)
       super
       @chs = []
+      @all_chs = Winevt::EventLog::Channel.new
+      @all_chs.force_enumerate = false
+
+      if @read_all_channels
+        @all_chs.each do |ch|
+          uch = ch.strip.downcase
+          @chs.push([uch, @read_existing_events])
+        end
+      end
 
       @read_existing_events = @read_from_head || @read_existing_events
-      if @channels.empty? && @subscribe_configs.empty?
+      if @channels.empty? && @subscribe_configs.empty? && !@read_all_channels
         @chs.push(['application', @read_existing_events])
       else
         @channels.map {|ch| ch.strip.downcase }.uniq.each do |uch|
