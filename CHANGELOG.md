@@ -1,3 +1,6 @@
+# Release v0.5.2 - 2020/02/28
+* in_windows_eventlog2: Add parameter to read from all channels shortcut
+
 # Release v0.5.1 - 2020/02/26
 * in_windows_eventlog2: Add empty bookmark checking mechanism
 
