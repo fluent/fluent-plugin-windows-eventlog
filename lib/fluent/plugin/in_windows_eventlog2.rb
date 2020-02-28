@@ -71,11 +71,12 @@ module Fluent::Plugin
       @all_chs.force_enumerate = false
 
       if @read_all_channels
-        @all_chs.each do |all_chs|
-          @chs.push(all_chs)
+        @all_chs.each do |ch|
+          uch = ch.strip.downcase
+          @chs.push([uch, @read_existing_events])
         end
       end
-          
+
       @read_existing_events = @read_from_head || @read_existing_events
       if @channels.empty? && @subscribe_configs.empty? && !@read_all_channels
         @chs.push(['application', @read_existing_events])
