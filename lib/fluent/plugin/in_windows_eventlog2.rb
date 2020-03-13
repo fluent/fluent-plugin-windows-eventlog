@@ -95,8 +95,6 @@ module Fluent::Plugin
       if @keynames.empty?
         @keynames = KEY_MAP.keys
       end
-      @keynames.delete('Qualifiers') unless @render_as_xml
-      @keynames.delete('EventData') if @parse_description
 
       @tag = tag
       @bookmarks_storage = storage_create(usage: "bookmarks")
@@ -112,6 +110,13 @@ module Fluent::Plugin
           alias_method :on_notify, :on_notify_hash
         end
       end
+
+      if !@render_as_xml
+        @keynames.delete('Qualifiers')
+      elsif @parser.respond_to?(:preserve_qualifiers?) && !@parser.preserve_qualifiers?
+        @keynames.delete('Qualifiers')
+      end
+      @keynames.delete('EventData') if @parse_description
     end
 
     def start

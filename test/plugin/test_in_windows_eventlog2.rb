@@ -372,4 +372,33 @@ EOS
     assert_true(record.has_key?("Description"))
     assert_true(record.has_key?("EventData"))
   end
+
+  def test_write_with_winevt_xml_parser_without_qualifiers
+    d = create_driver(config_element("ROOT", "", {"tag" => "fluent.eventlog"}, [
+                                       config_element("storage", "", {
+                                                        '@type' => 'local',
+                                                        'persistent' => false
+                                                      }),
+                                       config_element("parse", "", {
+                                                        '@type' => 'winevt_xml',
+                                                        'preserve_qualifiers' => false
+                                                      }),
+                                     ]))
+
+    service = Fluent::Plugin::EventService.new
+
+    omit "@parser.preserve_qualifiers does not respond" unless d.instance.instance_variable_get(:@parser).respond_to?(:preserve_qualifiers?)
+
+    d.run(expect_emits: 1) do
+      service.run
+    end
+
+    assert(d.events.length >= 1)
+    event = d.events.last
+    record = event.last
+
+    assert_true(record.has_key?("Description"))
+    assert_true(record.has_key?("EventData"))
+    assert_false(record.has_key?("Qualifiers"))
+  end
 end
