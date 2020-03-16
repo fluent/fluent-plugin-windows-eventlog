@@ -253,6 +253,37 @@ DESC
       assert_equal("4", record["Level"])
       assert_equal("fluent-plugins", record["ProviderName"])
     end
+
+    def test_write_with_preserving_qualifiers
+      require 'winevt'
+
+      d = create_driver(config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                    "render_as_xml" => false,
+                                                    'preserve_qualifiers_on_hash' => true
+                                                   }, [
+                                         config_element("storage", "", {
+                                                          '@type' => 'local',
+                                                          'persistent' => false
+                                                        }),
+                                       ]))
+
+      service = Fluent::Plugin::EventService.new
+      subscribe = Winevt::EventLog::Subscribe.new
+
+      omit "@parser.preserve_qualifiers does not respond" unless subscribe.respond_to?(:preserve_qualifiers?)
+
+      d.run(expect_emits: 1) do
+        service.run
+      end
+
+      assert(d.events.length >= 1)
+      event = d.events.last
+      record = event.last
+
+      assert_true(record.has_key?("Description"))
+      assert_true(record.has_key?("EventData"))
+      assert_true(record.has_key?("Qualifiers"))
+    end
   end
 
   class PersistBookMark < self
