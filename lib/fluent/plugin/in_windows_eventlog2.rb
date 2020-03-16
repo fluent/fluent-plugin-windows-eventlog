@@ -113,6 +113,9 @@ module Fluent::Plugin
         end
       end
 
+      if @render_as_xml && @preserve_qualifiers_on_hash
+        raise Fluent::ConfigError, "preserve_qualifiers_on_hash must be used with Hash object rendering(render_as_xml as false)."
+      end
       if !@render_as_xml && !@preserve_qualifiers_on_hash
         @keynames.delete('Qualifiers')
       elsif @parser.respond_to?(:preserve_qualifiers?) && !@parser.preserve_qualifiers?

@@ -89,6 +89,20 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
       assert_equal 2, d.instance.instance_variable_get(:@chs).select {|ch, flag| ch == "system"}.size
       assert_equal expected, d.instance.instance_variable_get(:@chs)
     end
+
+    test "invalid combination for preserving qualifiers" do
+      assert_raise(Fluent::ConfigError) do
+        create_driver config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                  "render_as_xml" => true,
+                                                  "preserve_qualifiers_on_hash" => true,
+                                                 }, [
+                                       config_element("storage", "", {
+                                                        '@type' => 'local',
+                                                        'persistent' => false
+                                                      }),
+                                     ])
+      end
+    end
   end
 
   data("application"        => ["Application", "Application"],
