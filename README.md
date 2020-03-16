@@ -141,6 +141,7 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
       tag winevt.raw
       render_as_xml false       # default is true.
       rate_limit 200            # default is -1(Winevt::EventLog::Subscribe::RATE_INFINITE).
+      # preserve_qualifiers_on_hash true # default is false.
       <storage>
         @type local             # @type local is the default.
         persistent true         # default is true. Set to false to use in-memory storage.
@@ -149,6 +150,11 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
       </storage>
       <parse>
         @type winevt_xml # @type winevt_xml is the default. winevt_xml and none parsers are supported for now.
+        # When set up it as true, this plugin preserves "Qualifiers" and "EventID" keys.
+        # When set up it as false, this plugin calculates actual "EventID" from "Qualifiers" and removing "Qualifiers".
+        # With the following equation:
+        # (EventID & 0xffff) | (Qualifiers & 0xffff) << 16
+        preserve_qualifiers true
       </parse>
       # <subscribe>
       #   channles application, system
@@ -177,7 +183,9 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 |`parse_description`| (option) parse `description` field and set parsed result into the record. `Description` and `EventData` fields are removed|
 |`read_from_head`   | **Deprecated** (option) Start to read the entries from the oldest, not from when fluentd is started. Defaults to `false`.|
 |`read_existing_events` | (option) Read the entries which already exist before fluentd is started. Defaults to `false`.|
+|`render_as_xml` | (option) Render Windows EventLog as XML or Ruby Hash object directly. Defaults to `true`.|
 |`rate_limit`      | (option) Specify rate limit to consume EventLog. Default is `Winevt::EventLog::Subscribe::RATE_INFINITE`.|
+|`preserve_qualifiers_on_hash`      | (option) When set up it as true, this plugin preserves "Qualifiers" and "EventID" keys. When set up it as false, this plugin calculates actual "EventID" from "Qualifiers" and removing "Qualifiers". Default is `false`.|
 |`read_all_channels`| (option) Read from all channels. Default is `false`|
 |`<subscribe>`          | Setting for subscribe channels. |
 
