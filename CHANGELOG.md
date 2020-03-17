@@ -1,3 +1,6 @@
+# Release v0.5.3 - 2020/03/17
+* in_windows_eventlog2: Add Qualifiers key handling options
+
 # Release v0.5.2 - 2020/02/28
 * in_windows_eventlog2: Add parameter to read from all channels shortcut
 
