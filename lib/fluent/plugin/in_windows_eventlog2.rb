@@ -40,6 +40,7 @@ module Fluent::Plugin
     config_param :parse_description, :bool, default: false
     config_param :render_as_xml, :bool, default: true
     config_param :rate_limit, :integer, default: Winevt::EventLog::Subscribe::RATE_INFINITE
+    config_param :preserve_qualifiers_on_hash, :bool, default: false
     config_param :read_all_channels, :bool, default: false
 
     config_section :subscribe, param_name: :subscribe_configs, required: false, multi: true do
@@ -95,12 +96,11 @@ module Fluent::Plugin
       if @keynames.empty?
         @keynames = KEY_MAP.keys
       end
-      @keynames.delete('Qualifiers') unless @render_as_xml
-      @keynames.delete('EventData') if @parse_description
 
       @tag = tag
       @bookmarks_storage = storage_create(usage: "bookmarks")
       @winevt_xml = false
+      @parser = nil
       if @render_as_xml
         @parser = parser_create
         @winevt_xml = @parser.respond_to?(:winevt_xml?) && @parser.winevt_xml?
@@ -112,6 +112,16 @@ module Fluent::Plugin
           alias_method :on_notify, :on_notify_hash
         end
       end
+
+      if @render_as_xml && @preserve_qualifiers_on_hash
+        raise Fluent::ConfigError, "preserve_qualifiers_on_hash must be used with Hash object rendering(render_as_xml as false)."
+      end
+      if !@render_as_xml && !@preserve_qualifiers_on_hash
+        @keynames.delete('Qualifiers')
+      elsif @parser.respond_to?(:preserve_qualifiers?) && !@parser.preserve_qualifiers?
+        @keynames.delete('Qualifiers')
+      end
+      @keynames.delete('EventData') if @parse_description
     end
 
     def start
@@ -132,6 +142,9 @@ module Fluent::Plugin
       subscribe.read_existing_events = read_existing_events
       begin
         subscribe.subscribe(ch, "*", bookmark)
+        if !@render_as_xml && @preserve_qualifiers_on_hash
+          subscribe.preserve_qualifiers = @preserve_qualifiers_on_hash
+        end
       rescue Winevt::EventLog::Query::Error => e
         raise Fluent::ConfigError, "Invalid Bookmark XML is loaded. #{e}"
       end
