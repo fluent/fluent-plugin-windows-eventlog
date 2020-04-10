@@ -1,3 +1,6 @@
+# Release v0.5.4 - 2020/04/10
+* Permit using nokogiri 1.11.0
+
 # Release v0.5.3 - 2020/03/17
 * in_windows_eventlog2: Add Qualifiers key handling options
 
