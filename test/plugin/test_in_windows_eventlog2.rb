@@ -15,6 +15,14 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
                                            })
                           ])
 
+  XML_RENDERING_CONFIG = config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                     "render_as_xml" => true}, [
+                                          config_element("storage", "", {
+                                                           '@type' => 'local',
+                                                           'persistent' => false
+                                                         })
+                                        ])
+
   def create_driver(conf = CONFIG)
     Fluent::Test::Driver::Input.new(Fluent::Plugin::WindowsEventLog2Input).configure(conf)
   end
@@ -25,7 +33,7 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
     assert_equal 2, d.instance.read_interval
     assert_equal [], d.instance.channels
     assert_false d.instance.read_existing_events
-    assert_true d.instance.render_as_xml
+    assert_false d.instance.render_as_xml
   end
 
   sub_test_case "configure" do
@@ -389,7 +397,8 @@ EOS
   end
 
   def test_write_with_none_parser
-    d = create_driver(config_element("ROOT", "", {"tag" => "fluent.eventlog"}, [
+    d = create_driver(config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                  "render_as_xml" => true}, [
                                        config_element("storage", "", {
                                                         '@type' => 'local',
                                                         'persistent' => false
@@ -419,7 +428,8 @@ EOS
   end
 
   def test_write_with_winevt_xml_parser_without_qualifiers
-    d = create_driver(config_element("ROOT", "", {"tag" => "fluent.eventlog"}, [
+    d = create_driver(config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                  "render_as_xml" => true}, [
                                        config_element("storage", "", {
                                                         '@type' => 'local',
                                                         'persistent' => false
