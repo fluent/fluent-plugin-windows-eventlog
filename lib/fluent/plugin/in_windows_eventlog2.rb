@@ -38,7 +38,7 @@ module Fluent::Plugin
     config_param :read_from_head, :bool, default: false, deprecated: "Use `read_existing_events' instead."
     config_param :read_existing_events, :bool, default: false
     config_param :parse_description, :bool, default: false
-    config_param :render_as_xml, :bool, default: true
+    config_param :render_as_xml, :bool, default: false
     config_param :rate_limit, :integer, default: Winevt::EventLog::Subscribe::RATE_INFINITE
     config_param :preserve_qualifiers_on_hash, :bool, default: false
     config_param :read_all_channels, :bool, default: false

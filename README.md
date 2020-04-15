@@ -139,7 +139,7 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
       read_existing_events false
       read_interval 2
       tag winevt.raw
-      render_as_xml false       # default is true.
+      render_as_xml false       # default is false.
       rate_limit 200            # default is -1(Winevt::EventLog::Subscribe::RATE_INFINITE).
       # preserve_qualifiers_on_hash true # default is false.
       <storage>
@@ -166,7 +166,7 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 
 **NOTE:** When `Description` contains error message such as `The message resource is present but the message was not found in the message table.`, eventlog's resource file (.mui) related to error generating event is something wrong. This issue is also occurred in built-in Windows Event Viewer which is the part of Windows management tool.
 
-**NOTE:** When `render_as_xml` as `false`, the dependent winevt_c gem renders Windows EventLog as Ruby Hash object directly. This reduces bottleneck to consume EventLog. Specifying `render_as_xml` as `false` should be faster consuming than `render_as_xml` as `true` case.
+**NOTE:** When `render_as_xml` as `true`, `fluent-plugin-parser-winevt_xml` plugin should be needed to parse XML rendered Windows EventLog string.
 
 **NOTE:** If you encountered CPU spike due to massively huge EventLog channel, `rate_limit` parameter may help you. Currently, this paramter can handle the multiples of 10 or -1(`Winevt::EventLog::Subscribe::RATE_INFINITE`).
 
@@ -183,7 +183,7 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 |`parse_description`| (option) parse `description` field and set parsed result into the record. `Description` and `EventData` fields are removed|
 |`read_from_head`   | **Deprecated** (option) Start to read the entries from the oldest, not from when fluentd is started. Defaults to `false`.|
 |`read_existing_events` | (option) Read the entries which already exist before fluentd is started. Defaults to `false`.|
-|`render_as_xml` | (option) Render Windows EventLog as XML or Ruby Hash object directly. Defaults to `true`.|
+|`render_as_xml` | (option) Render Windows EventLog as XML or Ruby Hash object directly. Defaults to `false`.|
 |`rate_limit`      | (option) Specify rate limit to consume EventLog. Default is `Winevt::EventLog::Subscribe::RATE_INFINITE`.|
 |`preserve_qualifiers_on_hash`      | (option) When set up it as true, this plugin preserves "Qualifiers" and "EventID" keys. When set up it as false, this plugin calculates actual "EventID" from "Qualifiers" and removing "Qualifiers". Default is `false`.|
 |`read_all_channels`| (option) Read from all channels. Default is `false`|
