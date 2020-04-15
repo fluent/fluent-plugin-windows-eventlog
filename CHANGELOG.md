@@ -1,3 +1,7 @@
+# Release v0.6.0 - 2020/04/15
+* Make fluent-plugin-parser-winevt_xml plugin as optional dependency
+* in_windows_eventlog2: Render Ruby hash object directly by default
+
 # Release v0.5.4 - 2020/04/10
 * Permit using nokogiri 1.11.0
 

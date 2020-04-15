@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "fluent-plugin-windows-eventlog"
-  spec.version       = "0.5.4"
+  spec.version       = "0.6.0"
   spec.authors       = ["okahashi117", "Hiroshi Hatake", "Masahiro Nakagawa"]
   spec.email         = ["naruki_okahashi@jbat.co.jp", "cosmo0920.oucc@gmail.com", "repeatedly@gmail.com"]
   spec.summary       = %q{Fluentd Input plugin to read windows event log.}
