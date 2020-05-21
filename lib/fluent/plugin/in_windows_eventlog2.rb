@@ -143,7 +143,7 @@ module Fluent::Plugin
       subscribe.read_existing_events = read_existing_events
       begin
         subscribe.subscribe(ch, "*", bookmark)
-        if !@render_as_xml && @preserve_qualifiers_on_hash && subscribe.respond_to?(:preserve_qualifiers=)
+        if !@render_as_xml && @preserve_qualifiers_on_hash
           subscribe.preserve_qualifiers = @preserve_qualifiers_on_hash
         end
       rescue Winevt::EventLog::Query::Error => e
