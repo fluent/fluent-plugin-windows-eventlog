@@ -111,6 +111,37 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
                                      ])
       end
     end
+
+    test "invalid description locale" do
+      assert_raise(Fluent::ConfigError) do
+        create_driver config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                  "description_locale" => "ex_EX"
+                                                 }, [
+                                       config_element("storage", "", {
+                                                        '@type' => 'local',
+                                                        'persistent' => false
+                                                      })
+                                     ])
+      end
+    end
+  end
+
+  data("Japanese"                => ["ja_JP", false],
+       "English (United States)" => ["en_US", false],
+       "English (UK)"            => ["en_GB", false],
+       "Dutch"                   => ["nl_NL", false],
+       "French"                  => ["fr_FR", false],
+       "German"                  => ["de_DE", false],
+       "Russian"                 => ["ru_RU", false],
+       "Spanish"                 => ["es_ES", false],
+       "Invalid"                 => ["ex_EX", true],
+      )
+  def test_unsupported_locale_p(data)
+    description_locale, expected = data
+    d = create_driver CONFIG
+    locale = Winevt::EventLog::Locale.new
+    result = d.instance.unsupported_locale?(locale, description_locale)
+    assert_equal expected, result
   end
 
   data("application"        => ["Application", "Application"],

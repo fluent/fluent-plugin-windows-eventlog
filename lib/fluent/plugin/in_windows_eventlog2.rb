@@ -42,6 +42,7 @@ module Fluent::Plugin
     config_param :rate_limit, :integer, default: Winevt::EventLog::Subscribe::RATE_INFINITE
     config_param :preserve_qualifiers_on_hash, :bool, default: false
     config_param :read_all_channels, :bool, default: false
+    config_param :description_locale, :string, default: nil
 
     config_section :subscribe, param_name: :subscribe_configs, required: false, multi: true do
       config_param :channels, :array
@@ -122,6 +123,15 @@ module Fluent::Plugin
         @keynames.delete('Qualifiers')
       end
       @keynames.delete('EventData') if @parse_description
+
+      locale = Winevt::EventLog::Locale.new
+      if @description_locale && unsupported_locale?(locale, @description_locale)
+        raise Fluent::ConfigError, "'#{@description_locale}' is not supported. Supported locales are: #{locale.each.map{|code, _desc| code}.join(" ")}"
+      end
+    end
+
+    def unsupported_locale?(locale, description_locale)
+      locale.each.select {|c, _d| c.downcase == description_locale.downcase}.empty?
     end
 
     def start
@@ -142,7 +152,7 @@ module Fluent::Plugin
       subscribe.read_existing_events = read_existing_events
       begin
         subscribe.subscribe(ch, "*", bookmark)
-        if !@render_as_xml && @preserve_qualifiers_on_hash && subscribe.respond_to?(:preserve_qualifiers=)
+        if !@render_as_xml && @preserve_qualifiers_on_hash
           subscribe.preserve_qualifiers = @preserve_qualifiers_on_hash
         end
       rescue Winevt::EventLog::Query::Error => e
@@ -150,6 +160,7 @@ module Fluent::Plugin
       end
       subscribe.render_as_xml = @render_as_xml
       subscribe.rate_limit = @rate_limit
+      subscribe.locale = @description_locale if @description_locale
       timer_execute("in_windows_eventlog_#{escape_channel(ch)}".to_sym, @read_interval) do
         on_notify(ch, subscribe)
       end
