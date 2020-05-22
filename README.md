@@ -142,6 +142,8 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
       render_as_xml false       # default is false.
       rate_limit 200            # default is -1(Winevt::EventLog::Subscribe::RATE_INFINITE).
       # preserve_qualifiers_on_hash true # default is false.
+      # read_all_channels false # default is false.
+      # description_locale en_US # default is nil. It means that system locale is used for obtaining description.
       <storage>
         @type local             # @type local is the default.
         persistent true         # default is true. Set to false to use in-memory storage.
@@ -187,6 +189,7 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 |`rate_limit`      | (option) Specify rate limit to consume EventLog. Default is `Winevt::EventLog::Subscribe::RATE_INFINITE`.|
 |`preserve_qualifiers_on_hash`      | (option) When set up it as true, this plugin preserves "Qualifiers" and "EventID" keys. When set up it as false, this plugin calculates actual "EventID" from "Qualifiers" and removing "Qualifiers". Default is `false`.|
 |`read_all_channels`| (option) Read from all channels. Default is `false`|
+|`description_locale`| (option) Specify description locale. Default is `nil`. See also: [Supported locales](https://github.com/fluent-plugins-nursery/winevt_c#multilingual-description) |
 |`<subscribe>`          | Setting for subscribe channels. |
 
 ##### subscribe section
