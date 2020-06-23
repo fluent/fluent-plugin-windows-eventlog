@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "bundler"
   spec.add_development_dependency "rake"
   spec.add_development_dependency "test-unit", "~> 3.2.0"
-  spec.add_development_dependency "nokogiri", [">= 1.10", "< 1.12"]
+  spec.add_development_dependency "nokogiri", [">= 1.10", "~> 1.11.pre"]
   spec.add_development_dependency "fluent-plugin-parser-winevt_xml", ">= 0.1.2"
   spec.add_runtime_dependency "fluentd", [">= 0.14.12", "< 2"]
   spec.add_runtime_dependency "win32-eventlog"
