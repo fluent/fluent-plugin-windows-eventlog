@@ -1,3 +1,6 @@
+# Release v.0.7.1.rc1 - 2020/06/23
+* in_windows_eventlog2: Depends on nokogiri 1.11 series
+
 # Release v0.7.0 - 2020/05/22
 * in_windows_eventlog2: Support multilingual description
 
