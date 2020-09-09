@@ -47,6 +47,10 @@ module Fluent::Plugin
     config_section :subscribe, param_name: :subscribe_configs, required: false, multi: true do
       config_param :channels, :array
       config_param :read_existing_events, :bool, default: false
+      config_param :remote_server, :string, default: nil
+      config_param :remote_domain, :string, default: nil
+      config_param :remote_username, :string, default: nil
+      config_param :remote_password, :string, default: nil, secret: true
     end
 
     config_section :storage do
@@ -68,6 +72,7 @@ module Fluent::Plugin
 
     def configure(conf)
       super
+      @session = nil
       @chs = []
       @all_chs = Winevt::EventLog::Channel.new
       @all_chs.force_enumerate = false
@@ -81,14 +86,22 @@ module Fluent::Plugin
 
       @read_existing_events = @read_from_head || @read_existing_events
       if @channels.empty? && @subscribe_configs.empty? && !@read_all_channels
-        @chs.push(['application', @read_existing_events])
+        @chs.push(['application', @read_existing_events, nil])
       else
         @channels.map {|ch| ch.strip.downcase }.uniq.each do |uch|
-          @chs.push([uch, @read_existing_events])
+          @chs.push([uch, @read_existing_events, nil])
         end
         @subscribe_configs.each do |subscribe|
+          if subscribe.remote_server
+            @session = Winevt::EventLog::Session.new(subscribe.remote_server,
+                                                     subscribe.remote_domain,
+                                                     subscribe.remote_username,
+                                                     subscribe.remote_password)
+
+            log.debug("connect to remote box (server: #{subscribe.remote_server}) domain: #{subscribe.remote_domain} username: #{subscribe.remote_username})")
+          end
           subscribe.channels.map {|ch| ch.strip.downcase }.uniq.each do |uch|
-            @chs.push([uch, subscribe.read_existing_events])
+            @chs.push([uch, subscribe.read_existing_events, @session])
           end
         end
       end
@@ -137,12 +150,12 @@ module Fluent::Plugin
     def start
       super
 
-      @chs.each do |ch, read_existing_events|
-        subscribe_channel(ch, read_existing_events)
+      @chs.each do |ch, read_existing_events, session|
+        subscribe_channel(ch, read_existing_events, session)
       end
     end
 
-    def subscribe_channel(ch, read_existing_events)
+    def subscribe_channel(ch, read_existing_events, remote_session)
       bookmarkXml = @bookmarks_storage.get(ch) || ""
       bookmark = nil
       if bookmark_validator(bookmarkXml, ch)
@@ -151,7 +164,7 @@ module Fluent::Plugin
       subscribe = Winevt::EventLog::Subscribe.new
       subscribe.read_existing_events = read_existing_events
       begin
-        subscribe.subscribe(ch, "*", bookmark)
+        subscribe.subscribe(ch, "*", bookmark, remote_session)
         if !@render_as_xml && @preserve_qualifiers_on_hash
           subscribe.preserve_qualifiers = @preserve_qualifiers_on_hash
         end

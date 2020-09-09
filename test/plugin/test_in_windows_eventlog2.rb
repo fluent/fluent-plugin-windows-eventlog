@@ -51,7 +51,7 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
                                                           'read_existing_events' => true
                                                         }),
                                        ])
-      expected = [["system", false], ["windows powershell", false], ["security", true]]
+      expected = [["system", false, nil], ["windows powershell", false, nil], ["security", true, nil]]
       assert_equal expected, d.instance.instance_variable_get(:@chs)
     end
 
@@ -71,7 +71,7 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
                                                           'read_existing_events' => true
                                                         }),
                                        ])
-      expected = [["system", false], ["windows powershell", false], ["security", true]]
+      expected = [["system", false, nil], ["windows powershell", false, nil], ["security", true, nil]]
       assert_equal 1, d.instance.instance_variable_get(:@chs).select {|ch, flag| ch == "system"}.size
       assert_equal expected, d.instance.instance_variable_get(:@chs)
     end
@@ -93,7 +93,7 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
                                                           'read_existing_events' => true
                                                         }),
                                        ])
-      expected = [["system", false], ["windows powershell", false], ["system", true], ["windows powershell", true], ["security", true]]
+      expected = [["system", false, nil], ["windows powershell", false, nil], ["system", true, nil], ["windows powershell", true, nil], ["security", true, nil]]
       assert_equal 2, d.instance.instance_variable_get(:@chs).select {|ch, flag| ch == "system"}.size
       assert_equal expected, d.instance.instance_variable_get(:@chs)
     end
