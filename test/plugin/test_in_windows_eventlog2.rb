@@ -45,9 +45,21 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
     assert_equal [], d.instance.channels
     assert_false d.instance.read_existing_events
     assert_false d.instance.render_as_xml
+    assert_nil d.instance.refresh_subscription_interval
   end
 
   sub_test_case "configure" do
+    test "refresh subscription interval" do
+      d = create_driver config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                    "refresh_subscription_interval" => "2m"}, [
+                                         config_element("storage", "", {
+                                                          '@type' => 'local',
+                                                          'persistent' => false
+                                                        })
+                                       ])
+      assert_equal 120, d.instance.refresh_subscription_interval
+    end
+
     test "subscribe directive" do
       d = create_driver config_element("ROOT", "", {"tag" => "fluent.eventlog"}, [
                                          config_element("storage", "", {
