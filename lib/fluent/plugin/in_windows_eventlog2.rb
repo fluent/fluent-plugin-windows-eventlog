@@ -190,10 +190,22 @@ module Fluent::Plugin
     end
 
     def clear_subscritpions
-      @subscriptions.clear
-      @timers.each do |ch, timer|
-        event_loop_detach(timer)
-        log.debug "channel (#{ch}) subscription is detached."
+      @subscriptions.keys.each do |ch|
+        subscription = @subscriptions.delete(ch)
+        if subscription
+          if subscription.cancel
+            log.debug "channel (#{ch}) subscription is cancelled."
+            subscription.close
+            log.debug "channel (#{ch}) subscription handles are closed forcibly."
+          end
+        end
+      end
+      @timers.keys.each do |ch|
+        timer = @timers.delete(ch)
+        if timer
+          event_loop_detach(timer)
+          log.debug "channel (#{ch}) subscription watcher is detached."
+        end
       end
     end
 
