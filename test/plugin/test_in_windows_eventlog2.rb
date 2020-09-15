@@ -321,7 +321,7 @@ DESC
     end
 
     assert(d.events.length >= 1)
-    event = d.events.last
+    event = d.events.select {|e| e.last["EventID"] == "65500" }.last
     record = event.last
 
     expected = {"EventID"      => "65500",
@@ -353,7 +353,7 @@ DESC
     end
 
     assert(d.events.length >= 1)
-    event = d.events.last
+    event = d.events.select {|e| e.last["EventID"] == "65500" }.last
     record = event.last
 
     assert_equal("Application", record["Channel"])
