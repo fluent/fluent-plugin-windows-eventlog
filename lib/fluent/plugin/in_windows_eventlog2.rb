@@ -178,7 +178,7 @@ module Fluent::Plugin
     end
 
     def refresh_subscriptions
-      @subscriptions.clear
+      clear_subscritpions
 
       @chs.each do |ch, read_existing_events, session|
         retry_on_error(ch) do
@@ -187,6 +187,14 @@ module Fluent::Plugin
         end
       end
       subscribe_channels(@subscriptions)
+    end
+
+    def clear_subscritpions
+      @subscriptions.clear
+      @timers.each do |ch, timer|
+        event_loop_detach(timer)
+        log.debug "channel (#{ch}) subscription is detached."
+      end
     end
 
     def subscription(ch, read_existing_events, remote_session)
@@ -212,10 +220,6 @@ module Fluent::Plugin
     end
 
     def subscribe_channels(subscriptions)
-      @timers.each do |ch, timer|
-        event_loop_detach(timer)
-        log.debug "channel (#{ch}) subscription is detached."
-      end
       subscriptions.each do |ch, subscribe|
         @timers[ch] = timer_execute("in_windows_eventlog_#{escape_channel(ch)}".to_sym, @read_interval) do
           on_notify(ch, subscribe)
