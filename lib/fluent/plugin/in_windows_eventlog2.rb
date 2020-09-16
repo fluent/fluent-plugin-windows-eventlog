@@ -308,12 +308,12 @@ module Fluent::Plugin
             end
           end
         end
+        router.emit_stream(@tag, es)
+        @bookmarks_storage.put(ch, subscribe.bookmark)
       rescue Winevt::EventLog::Query::Error => e
-        log.warn "Invalid XML data", error: e
+        log.warn "Invalid XML data on #{ch}.", error: e
         log.warn_backtrace
       end
-      router.emit_stream(@tag, es)
-      @bookmarks_storage.put(ch, subscribe.bookmark)
     end
 
     def on_notify_hash(ch, subscribe)
@@ -338,12 +338,12 @@ module Fluent::Plugin
           parse_desc(h) if @parse_description
           es.add(Fluent::Engine.now, h)
         end
+        router.emit_stream(@tag, es)
+        @bookmarks_storage.put(ch, subscribe.bookmark)
       rescue Winevt::EventLog::Query::Error => e
-        log.warn "Invalid Hash data", error: e
+        log.warn "Invalid Hash data on #{ch}.", error: e
         log.warn_backtrace
       end
-      router.emit_stream(@tag, es)
-      @bookmarks_storage.put(ch, subscribe.bookmark)
     end
 
     #### These lines copied from in_windows_eventlog plugin:
