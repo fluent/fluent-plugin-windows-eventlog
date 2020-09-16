@@ -144,7 +144,7 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
       # preserve_qualifiers_on_hash true # default is false.
       # read_all_channels false # default is false.
       # description_locale en_US # default is nil. It means that system locale is used for obtaining description.
-      # refresh_subscription_interval 60s # default is nil. It specifies refresh interval for channel subscriptions.
+      # refresh_subscription_interval 10m # default is nil. It specifies refresh interval for channel subscriptions.
       <storage>
         @type local             # @type local is the default.
         persistent true         # default is true. Set to false to use in-memory storage.
