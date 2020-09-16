@@ -1,3 +1,6 @@
+# Release v0.8.0 - 2020/09/16
+* in_windows_eventlog2: Support remoting access
+
 # Release v.0.7.1.rc1 - 2020/06/23
 * in_windows_eventlog2: Depends on nokogiri 1.11 series
 
