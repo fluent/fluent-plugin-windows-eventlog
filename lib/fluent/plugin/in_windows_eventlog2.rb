@@ -161,6 +161,18 @@ module Fluent::Plugin
       end
     end
 
+    def shutdown
+      super
+
+      @subscriptions.keys.each do |ch|
+        subscription = @subscriptions.delete(ch)
+        if subscription
+          subscription.cancel
+          log.debug "channel (#{ch}) subscription is canceled."
+        end
+      end
+    end
+
     def retry_on_error(channel, times: 15)
       try = 0
       begin
