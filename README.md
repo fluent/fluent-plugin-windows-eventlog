@@ -144,6 +144,7 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
       # preserve_qualifiers_on_hash true # default is false.
       # read_all_channels false # default is false.
       # description_locale en_US # default is nil. It means that system locale is used for obtaining description.
+      # refresh_subscription_interval 10m # default is nil. It specifies refresh interval for channel subscriptions.
       <storage>
         @type local             # @type local is the default.
         persistent true         # default is true. Set to false to use in-memory storage.
@@ -161,6 +162,10 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
       # <subscribe>
       #   channles application, system
       #   read_existing_events false # read_existing_events should be applied each of subscribe directive(s)
+      #   remote_server 127.0.0.1 # Remote server ip/fqdn
+      #   remote_domain WORKGROUP # Domain name
+      #   remote_username fluentd # Remoting access account name
+      #   remote_password changeme! # Remoting access account password
       # </subscribe>
     </source>
 
@@ -190,6 +195,7 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 |`preserve_qualifiers_on_hash`      | (option) When set up it as true, this plugin preserves "Qualifiers" and "EventID" keys. When set up it as false, this plugin calculates actual "EventID" from "Qualifiers" and removing "Qualifiers". Default is `false`.|
 |`read_all_channels`| (option) Read from all channels. Default is `false`|
 |`description_locale`| (option) Specify description locale. Default is `nil`. See also: [Supported locales](https://github.com/fluent-plugins-nursery/winevt_c#multilingual-description) |
+|`refresh_subscription_interval`|(option) It specifies refresh interval for channel subscriptions. Default is `nil`.|
 |`<subscribe>`          | Setting for subscribe channels. |
 
 ##### subscribe section
@@ -198,6 +204,10 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 |:-----    |:-----       |
 |`channels`             | One or more of {'application', 'system', 'setup', 'security'}. If you want to read 'setup' or 'security' logs, you must launch fluentd with administrator privileges. |
 |`read_existing_events` | (option) Read the entries which already exist before fluentd is started. Defaults to `false`. |
+|`remote_server` | (option) Remoting access server ip address/fqdn. Defaults to `nil`. |
+|`remote_domain` | (option) Remoting access server joining domain name. Defaults to `nil`. |
+|`remote_username` | (option) Remoting access access account's username. Defaults to `nil`. |
+|`remote_password` | (option) Remoting access access account's password. Defaults to `nil`. |
 
 
 **Motivation:** subscribe directive is designed for applying `read_existing_events` each of channels which is specified in subscribe section(s).
@@ -233,6 +243,33 @@ This configuration can be handled as:
 
 * "Application" and "Security" channels just tailing
 * "HardwareEvent" channel read existing events before launching Fluentd
+
+###### Remoting access
+
+`<subscribe>` section supports remoting access parameters:
+
+* `remote_server`
+* `remote_domain`
+* `remote_username`
+* `remote_password`
+
+These parameters are only in `<subscribe>` directive.
+
+Note that before using this feature, remoting access users should belong to "Event Log Readers" group:
+
+```console
+> net localgroup "Event Log Readers" <domain\username> /add
+```
+
+And then, users also should set up their remote box's Firewall configuration:
+
+```console
+> netsh advfirewall firewall set rule group="Remote Event Log Management" new enable=yes
+```
+
+As a security best practices, remoting access account _should not be administrator account_.
+
+For graphical instructions, please refer to [Preconfigure a Machine to Collect Remote Windows Events | Sumo Logic](https://help.sumologic.com/03Send-Data/Sources/01Sources-for-Installed-Collectors/Remote-Windows-Event-Log-Source/Preconfigure-a-Machine-to-Collect-Remote-Windows-Events) document for example.
 
 ##### Available keys
 

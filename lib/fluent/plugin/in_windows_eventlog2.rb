@@ -7,6 +7,8 @@ module Fluent::Plugin
   class WindowsEventLog2Input < Input
     Fluent::Plugin.register_input('windows_eventlog2', self)
 
+    class ReconnectError < Fluent::UnrecoverableError; end
+
     helpers :timer, :storage, :parser
 
     DEFAULT_STORAGE_TYPE = 'local'
@@ -43,10 +45,15 @@ module Fluent::Plugin
     config_param :preserve_qualifiers_on_hash, :bool, default: false
     config_param :read_all_channels, :bool, default: false
     config_param :description_locale, :string, default: nil
+    config_param :refresh_subscription_interval, :time, default: nil
 
     config_section :subscribe, param_name: :subscribe_configs, required: false, multi: true do
       config_param :channels, :array
       config_param :read_existing_events, :bool, default: false
+      config_param :remote_server, :string, default: nil
+      config_param :remote_domain, :string, default: nil
+      config_param :remote_username, :string, default: nil
+      config_param :remote_password, :string, default: nil, secret: true
     end
 
     config_section :storage do
@@ -68,9 +75,12 @@ module Fluent::Plugin
 
     def configure(conf)
       super
+      @session = nil
       @chs = []
+      @subscriptions = {}
       @all_chs = Winevt::EventLog::Channel.new
       @all_chs.force_enumerate = false
+      @timers = {}
 
       if @read_all_channels
         @all_chs.each do |ch|
@@ -81,14 +91,22 @@ module Fluent::Plugin
 
       @read_existing_events = @read_from_head || @read_existing_events
       if @channels.empty? && @subscribe_configs.empty? && !@read_all_channels
-        @chs.push(['application', @read_existing_events])
+        @chs.push(['application', @read_existing_events, nil])
       else
         @channels.map {|ch| ch.strip.downcase }.uniq.each do |uch|
-          @chs.push([uch, @read_existing_events])
+          @chs.push([uch, @read_existing_events, nil])
         end
         @subscribe_configs.each do |subscribe|
+          if subscribe.remote_server
+            @session = Winevt::EventLog::Session.new(subscribe.remote_server,
+                                                     subscribe.remote_domain,
+                                                     subscribe.remote_username,
+                                                     subscribe.remote_password)
+
+            log.debug("connect to remote box (server: #{subscribe.remote_server}) domain: #{subscribe.remote_domain} username: #{subscribe.remote_username})")
+          end
           subscribe.channels.map {|ch| ch.strip.downcase }.uniq.each do |uch|
-            @chs.push([uch, subscribe.read_existing_events])
+            @chs.push([uch, subscribe.read_existing_events, @session])
           end
         end
       end
@@ -137,12 +155,73 @@ module Fluent::Plugin
     def start
       super
 
-      @chs.each do |ch, read_existing_events|
-        subscribe_channel(ch, read_existing_events)
+      refresh_subscriptions
+      if @refresh_subscription_interval
+        timer_execute(:in_windows_eventlog_refresh_subscription_timer, @refresh_subscription_interval, &method(:refresh_subscriptions))
       end
     end
 
-    def subscribe_channel(ch, read_existing_events)
+    def shutdown
+      super
+
+      @subscriptions.keys.each do |ch|
+        subscription = @subscriptions.delete(ch)
+        if subscription
+          subscription.cancel
+          log.debug "channel (#{ch}) subscription is canceled."
+        end
+      end
+    end
+
+    def retry_on_error(channel, times: 15)
+      try = 0
+      begin
+        log.debug "Retry to subscribe for #{channel}...." if try > 1
+        try += 1
+        yield
+        log.info "Retry to subscribe for #{channel} succeeded." if try > 1
+        try = 0
+      rescue Winevt::EventLog::Subscribe::RemoteHandlerError => e
+        raise ReconnectError, "Retrying limit is exceeded." if try > times
+        log.warn "#{e.message}. Remaining retry count(s): #{times - try}"
+        sleep 2**try
+        retry
+      end
+    end
+
+    def refresh_subscriptions
+      clear_subscritpions
+
+      @chs.each do |ch, read_existing_events, session|
+        retry_on_error(ch) do
+          ch, subscribe = subscription(ch, read_existing_events, session)
+          @subscriptions[ch] = subscribe
+        end
+      end
+      subscribe_channels(@subscriptions)
+    end
+
+    def clear_subscritpions
+      @subscriptions.keys.each do |ch|
+        subscription = @subscriptions.delete(ch)
+        if subscription
+          if subscription.cancel
+            log.debug "channel (#{ch}) subscription is cancelled."
+            subscription.close
+            log.debug "channel (#{ch}) subscription handles are closed forcibly."
+          end
+        end
+      end
+      @timers.keys.each do |ch|
+        timer = @timers.delete(ch)
+        if timer
+          event_loop_detach(timer)
+          log.debug "channel (#{ch}) subscription watcher is detached."
+        end
+      end
+    end
+
+    def subscription(ch, read_existing_events, remote_session)
       bookmarkXml = @bookmarks_storage.get(ch) || ""
       bookmark = nil
       if bookmark_validator(bookmarkXml, ch)
@@ -151,7 +230,7 @@ module Fluent::Plugin
       subscribe = Winevt::EventLog::Subscribe.new
       subscribe.read_existing_events = read_existing_events
       begin
-        subscribe.subscribe(ch, "*", bookmark)
+        subscribe.subscribe(ch, "*", bookmark, remote_session)
         if !@render_as_xml && @preserve_qualifiers_on_hash
           subscribe.preserve_qualifiers = @preserve_qualifiers_on_hash
         end
@@ -161,8 +240,15 @@ module Fluent::Plugin
       subscribe.render_as_xml = @render_as_xml
       subscribe.rate_limit = @rate_limit
       subscribe.locale = @description_locale if @description_locale
-      timer_execute("in_windows_eventlog_#{escape_channel(ch)}".to_sym, @read_interval) do
-        on_notify(ch, subscribe)
+      [ch, subscribe]
+    end
+
+    def subscribe_channels(subscriptions)
+      subscriptions.each do |ch, subscribe|
+        @timers[ch] = timer_execute("in_windows_eventlog_#{escape_channel(ch)}".to_sym, @read_interval) do
+          on_notify(ch, subscribe)
+        end
+        log.debug "channel (#{ch}) subscription is subscribed."
       end
     end
 
@@ -222,12 +308,12 @@ module Fluent::Plugin
             end
           end
         end
+        router.emit_stream(@tag, es)
+        @bookmarks_storage.put(ch, subscribe.bookmark)
       rescue Winevt::EventLog::Query::Error => e
-        log.warn "Invalid XML data", error: e
+        log.warn "Invalid XML data on #{ch}.", error: e
         log.warn_backtrace
       end
-      router.emit_stream(@tag, es)
-      @bookmarks_storage.put(ch, subscribe.bookmark)
     end
 
     def on_notify_hash(ch, subscribe)
@@ -252,12 +338,12 @@ module Fluent::Plugin
           parse_desc(h) if @parse_description
           es.add(Fluent::Engine.now, h)
         end
+        router.emit_stream(@tag, es)
+        @bookmarks_storage.put(ch, subscribe.bookmark)
       rescue Winevt::EventLog::Query::Error => e
-        log.warn "Invalid Hash data", error: e
+        log.warn "Invalid Hash data on #{ch}.", error: e
         log.warn_backtrace
       end
-      router.emit_stream(@tag, es)
-      @bookmarks_storage.put(ch, subscribe.bookmark)
     end
 
     #### These lines copied from in_windows_eventlog plugin:

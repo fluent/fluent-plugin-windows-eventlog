@@ -2,6 +2,17 @@ require 'helper'
 require 'fileutils'
 require 'generate-windows-event'
 
+# Monkey patch for testing
+class Winevt::EventLog::Session
+  def ==(obj)
+    self.server == obj.server &&
+      self.domain == obj.domain &&
+      self.username == obj.username &&
+      self.password == obj.password &&
+      self.flags == obj.flags
+  end
+end
+
 class WindowsEventLog2InputTest < Test::Unit::TestCase
 
   def setup
@@ -34,9 +45,21 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
     assert_equal [], d.instance.channels
     assert_false d.instance.read_existing_events
     assert_false d.instance.render_as_xml
+    assert_nil d.instance.refresh_subscription_interval
   end
 
   sub_test_case "configure" do
+    test "refresh subscription interval" do
+      d = create_driver config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                    "refresh_subscription_interval" => "2m"}, [
+                                         config_element("storage", "", {
+                                                          '@type' => 'local',
+                                                          'persistent' => false
+                                                        })
+                                       ])
+      assert_equal 120, d.instance.refresh_subscription_interval
+    end
+
     test "subscribe directive" do
       d = create_driver config_element("ROOT", "", {"tag" => "fluent.eventlog"}, [
                                          config_element("storage", "", {
@@ -51,7 +74,36 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
                                                           'read_existing_events' => true
                                                         }),
                                        ])
-      expected = [["system", false], ["windows powershell", false], ["security", true]]
+      expected = [["system", false, nil], ["windows powershell", false, nil], ["security", true, nil]]
+      assert_equal expected, d.instance.instance_variable_get(:@chs)
+    end
+
+    test "subscribe directive with remote server session" do
+      d = create_driver config_element("ROOT", "", {"tag" => "fluent.eventlog"}, [
+                                         config_element("storage", "", {
+                                                          '@type' => 'local',
+                                                          'persistent' => false
+                                                        }),
+                                         config_element("subscribe", "", {
+                                                          'channels' => ['System', 'Windows PowerShell'],
+                                                          'remote_server' => '127.0.0.1',
+                                                        }),
+                                         config_element("subscribe", "", {
+                                                          'channels' => ['Security'],
+                                                          'read_existing_events' => true,
+                                                          'remote_server' => '192.168.0.1',
+                                                          'remote_username' => 'fluentd',
+                                                          'remote_password' => 'changeme!'
+                                                        }),
+                                       ])
+      localhost_session = Winevt::EventLog::Session.new("127.0.0.1")
+      remote_session = Winevt::EventLog::Session.new("192.168.0.1",
+                                                     nil,
+                                                     "fluentd",
+                                                     "changeme!")
+      expected = [["system", false, localhost_session],
+                  ["windows powershell", false, localhost_session],
+                  ["security", true, remote_session]]
       assert_equal expected, d.instance.instance_variable_get(:@chs)
     end
 
@@ -71,7 +123,7 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
                                                           'read_existing_events' => true
                                                         }),
                                        ])
-      expected = [["system", false], ["windows powershell", false], ["security", true]]
+      expected = [["system", false, nil], ["windows powershell", false, nil], ["security", true, nil]]
       assert_equal 1, d.instance.instance_variable_get(:@chs).select {|ch, flag| ch == "system"}.size
       assert_equal expected, d.instance.instance_variable_get(:@chs)
     end
@@ -93,7 +145,7 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
                                                           'read_existing_events' => true
                                                         }),
                                        ])
-      expected = [["system", false], ["windows powershell", false], ["system", true], ["windows powershell", true], ["security", true]]
+      expected = [["system", false, nil], ["windows powershell", false, nil], ["system", true, nil], ["windows powershell", true, nil], ["security", true, nil]]
       assert_equal 2, d.instance.instance_variable_get(:@chs).select {|ch, flag| ch == "system"}.size
       assert_equal expected, d.instance.instance_variable_get(:@chs)
     end
@@ -269,7 +321,7 @@ DESC
     end
 
     assert(d.events.length >= 1)
-    event = d.events.last
+    event = d.events.select {|e| e.last["EventID"] == "65500" }.last
     record = event.last
 
     expected = {"EventID"      => "65500",
@@ -278,6 +330,36 @@ DESC
                 "ProviderName" => "fluent-plugins"}
 
     assert_equal(expected, record)
+  end
+
+  REMOTING_ACCESS_CONFIG = config_element("ROOT", "", {"tag" => "fluent.eventlog"}, [
+                                            config_element("storage", "", {
+                                                             '@type' => 'local',
+                                                             'persistent' => false
+                                                           }),
+                                            config_element("subscribe", "", {
+                                                             'channels' => ['Application'],
+                                                             'remote_server' => '127.0.0.1',
+                                                           }),
+                                          ])
+
+  def test_write_with_remoting_access
+    d = create_driver(REMOTING_ACCESS_CONFIG)
+
+    service = Fluent::Plugin::EventService.new
+
+    d.run(expect_emits: 1) do
+      service.run
+    end
+
+    assert(d.events.length >= 1)
+    event = d.events.select {|e| e.last["EventID"] == "65500" }.last
+    record = event.last
+
+    assert_equal("Application", record["Channel"])
+    assert_equal("65500", record["EventID"])
+    assert_equal("4", record["Level"])
+    assert_equal("fluent-plugins", record["ProviderName"])
   end
 
   class HashRendered < self
