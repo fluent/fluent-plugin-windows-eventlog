@@ -181,7 +181,7 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 
 |name      | description |
 |:-----    |:-----       |
-|`channels`         | (option) No default value just empty array, but 'application' is used as default due to backward compatibility. One or more of {'application', 'system', 'setup', 'security'}. If you want to read 'setup' or 'security' logs, you must launch fluentd with administrator privileges.|
+|`channels`         | (option) No default value just empty array, but 'application' is used as default due to backward compatibility. One or more of {'application', 'system', 'setup', 'security'} and other evtx, which is the brand new Windows XML Event Log (EVTX) format since Windows Vista, formatted channels. Theoritically, `in_windows_ventlog2` may read all of channels except for debug and analytical typed channels. If you want to read 'setup' or 'security' logs or some privileged channels, you must launch fluentd with administrator privileges.|
 |`keys`             | (option) A subset of [keys](#read-keys) to read. Defaults to all keys.|
 |`read_interval`    | (option) Read interval in seconds. 2 seconds as default.|
 |`from_encoding`    | (option) Input character encoding. `nil` as default.|
