@@ -148,17 +148,17 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
       <storage>
         @type local             # @type local is the default.
         persistent true         # default is true. Set to false to use in-memory storage.
-        path ./tmp/storage.json # This is required when persistent is true.
+        path ./tmp/storage.json # This is required when persistent is true. If migrating from eventlog v1 please ensure that you remove the old .pos folder
                                 # Or, please consider using <system> section's `root_dir` parameter.
       </storage>
-      <parse>
-        @type winevt_xml # @type winevt_xml is the default. winevt_xml and none parsers are supported for now.
+      # <parse> # Note: parsing is only available when render_as_xml true
+      #  @type winevt_xml # @type winevt_xml is the default. winevt_xml and none parsers are supported for now.
         # When set up it as true, this plugin preserves "Qualifiers" and "EventID" keys.
         # When set up it as false, this plugin calculates actual "EventID" from "Qualifiers" and removing "Qualifiers".
         # With the following equation:
         # (EventID & 0xffff) | (Qualifiers & 0xffff) << 16
-        preserve_qualifiers true
-      </parse>
+        # preserve_qualifiers true # preserve_qualifiers_on_hash can be used as a setting outside <parse> if render_as_xml is false
+      # </parse>
       # <subscribe>
       #   channles application, system
       #   read_existing_events false # read_existing_events should be applied each of subscribe directive(s)
