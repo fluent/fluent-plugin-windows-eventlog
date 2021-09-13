@@ -245,6 +245,7 @@ module Fluent::Plugin
 
     def subscribe_channels(subscriptions)
       subscriptions.each do |ch, subscribe|
+        log.trace "Subscribing Windows EventLog at #{ch} channel"
         @timers[ch] = timer_execute("in_windows_eventlog_#{escape_channel(ch)}".to_sym, @read_interval) do
           on_notify(ch, subscribe)
         end
@@ -310,6 +311,7 @@ module Fluent::Plugin
         end
         router.emit_stream(@tag, es)
         @bookmarks_storage.put(ch, subscribe.bookmark)
+        log.trace "Collecting Windows EventLog from #{ch} channel. Collected size: #{es.size}"
       rescue Winevt::EventLog::Query::Error => e
         log.warn "Invalid XML data on #{ch}.", error: e
         log.warn_backtrace
@@ -340,6 +342,7 @@ module Fluent::Plugin
         end
         router.emit_stream(@tag, es)
         @bookmarks_storage.put(ch, subscribe.bookmark)
+        log.trace "Collecting Windows EventLog from #{ch} channel. Collected size: #{es.size}"
       rescue Winevt::EventLog::Query::Error => e
         log.warn "Invalid Hash data on #{ch}.", error: e
         log.warn_backtrace
