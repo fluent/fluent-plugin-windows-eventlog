@@ -145,6 +145,7 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
       # read_all_channels false # default is false.
       # description_locale en_US # default is nil. It means that system locale is used for obtaining description.
       # refresh_subscription_interval 10m # default is nil. It specifies refresh interval for channel subscriptions.
+      # event_query "Event/System[EventID!=1001]" # default is "*".
       <storage>
         @type local             # @type local is the default.
         persistent true         # default is true. Set to false to use in-memory storage.
@@ -196,6 +197,7 @@ fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 |`read_all_channels`| (option) Read from all channels. Default is `false`|
 |`description_locale`| (option) Specify description locale. Default is `nil`. See also: [Supported locales](https://github.com/fluent-plugins-nursery/winevt_c#multilingual-description) |
 |`refresh_subscription_interval`|(option) It specifies refresh interval for channel subscriptions. Default is `nil`.|
+|`event_query`|(option) It specifies query for deny/allow/filter events with XPath 1.0 or structured XML query. Default is `"*"` (retrieving all events).|
 |`<subscribe>`          | Setting for subscribe channels. |
 
 ##### subscribe section
