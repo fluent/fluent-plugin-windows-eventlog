@@ -495,8 +495,9 @@ DESC
         service.run
       end
 
-      assert(d2.events.length == 1) # should be tailing after previous context.
-      event2 = d2.events.last
+      events = d2.events.select {|e| e.last["EventID"] == "65500" }
+      assert(events.length == 1) # should be tailing after previous context.
+      event2 = events.last
       record2 = event2.last
 
       curr_id = record2["EventRecordID"].to_i
