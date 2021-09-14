@@ -302,6 +302,33 @@ DESC
     assert_equal("fluent-plugins", record["ProviderName"])
   end
 
+  CONFIG_WITH_QUERY = config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                  "event_query" => "Event/System[EventID=65500]"}, [
+                                       config_element("storage", "", {
+                                                        '@type' => 'local',
+                                                        'persistent' => false
+                                                      })
+                          ])
+  def test_write_with_event_query
+    d = create_driver(CONFIG_WITH_QUERY)
+
+    service = Fluent::Plugin::EventService.new
+
+    d.run(expect_emits: 1) do
+      service.run
+    end
+
+    assert(d.events.length >= 1)
+    event = d.events.last
+    record = event.last
+
+    assert_equal("Application", record["Channel"])
+    assert_equal("65500", record["EventID"])
+    assert_equal("4", record["Level"])
+    assert_equal("fluent-plugins", record["ProviderName"])
+  end
+
+
   CONFIG_KEYS = config_element("ROOT", "", {
                                  "tag" => "fluent.eventlog",
                                  "keys" => ["EventID", "Level", "Channel", "ProviderName"]
@@ -468,8 +495,9 @@ DESC
         service.run
       end
 
-      assert(d2.events.length == 1) # should be tailing after previous context.
-      event2 = d2.events.last
+      events = d2.events.select {|e| e.last["EventID"] == "65500" }
+      assert(events.length == 1) # should be tailing after previous context.
+      event2 = events.last
       record2 = event2.last
 
       curr_id = record2["EventRecordID"].to_i

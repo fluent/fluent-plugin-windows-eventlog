@@ -46,6 +46,7 @@ module Fluent::Plugin
     config_param :read_all_channels, :bool, default: false
     config_param :description_locale, :string, default: nil
     config_param :refresh_subscription_interval, :time, default: nil
+    config_param :event_query, :string, default: "*"
 
     config_section :subscribe, param_name: :subscribe_configs, required: false, multi: true do
       config_param :channels, :array
@@ -230,7 +231,7 @@ module Fluent::Plugin
       subscribe = Winevt::EventLog::Subscribe.new
       subscribe.read_existing_events = read_existing_events
       begin
-        subscribe.subscribe(ch, "*", bookmark, remote_session)
+        subscribe.subscribe(ch, event_query, bookmark, remote_session)
         if !@render_as_xml && @preserve_qualifiers_on_hash
           subscribe.preserve_qualifiers = @preserve_qualifiers_on_hash
         end
