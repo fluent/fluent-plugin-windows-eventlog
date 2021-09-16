@@ -1,3 +1,7 @@
+# Release v0.8.1 - 2021/09/16
+* in_windows_eventlog2: Add trace logs for debugging
+* in_windows_eventlog2: Support event query parameter on Windows EventLog channel subscriptions
+
 # Release v0.8.0 - 2020/09/16
 * in_windows_eventlog2: Support remoting access
 
