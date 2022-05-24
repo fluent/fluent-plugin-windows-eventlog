@@ -232,11 +232,11 @@ With `<subscribe>` directive, this requirements can be represendted as:
 
 ```aconf
 <subscribe>
-  channles ["Application", "Security"]
+  channels ["Application", "Security"]
   # read_existing_events false
 </subscribe>
 <subscribe>
-  channles ["HardwareEvent"]
+  channels ["HardwareEvent"]
   read_existing_events true
 </subscribe>
 ```
