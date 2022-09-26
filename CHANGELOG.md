@@ -1,3 +1,6 @@
+# Release v0.8.2 - 2022/09/26
+* in_windows_eventlog2: Skip to subscribe non existent channels, not to stop Fluentd
+
 # Release v0.8.1 - 2021/09/16
 * in_windows_eventlog2: Add trace logs for debugging
 * in_windows_eventlog2: Support event query parameter on Windows EventLog channel subscriptions
