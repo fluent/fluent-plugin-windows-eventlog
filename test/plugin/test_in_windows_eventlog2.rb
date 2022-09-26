@@ -302,6 +302,25 @@ DESC
     assert_equal("fluent-plugins", record["ProviderName"])
   end
 
+  CONFIG_WITH_NON_EXISTENT_CHANNEL = config_element("ROOT", "", {
+                                 "channels" => ["application", "NonExistentChannel"]
+                               })
+  def test_skip_non_existent_channel
+    d = create_driver(CONFIG + CONFIG_WITH_NON_EXISTENT_CHANNEL)
+
+    service = Fluent::Plugin::EventService.new
+
+    assert_nothing_raised do
+      d.run(expect_emits: 1) do
+        service.run
+      end
+    end
+
+    assert(d.events.length >= 1)
+    assert(d.logs.any?{|log| log.include?("[warn]: Channel Not Found: nonexistentchannel") },
+           d.logs.join("\n"))
+  end
+
   CONFIG_WITH_QUERY = config_element("ROOT", "", {"tag" => "fluent.eventlog",
                                                   "event_query" => "Event/System[EventID=65500]"}, [
                                        config_element("storage", "", {

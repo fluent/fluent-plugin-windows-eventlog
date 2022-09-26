@@ -195,8 +195,12 @@ module Fluent::Plugin
 
       @chs.each do |ch, read_existing_events, session|
         retry_on_error(ch) do
-          ch, subscribe = subscription(ch, read_existing_events, session)
-          @subscriptions[ch] = subscribe
+          begin
+            ch, subscribe = subscription(ch, read_existing_events, session)
+            @subscriptions[ch] = subscribe
+          rescue Winevt::EventLog::ChannelNotFoundError => e
+            log.warn "#{e.message}"
+          end
         end
       end
       subscribe_channels(@subscriptions)
