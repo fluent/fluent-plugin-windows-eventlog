@@ -1,3 +1,6 @@
+# Release v0.8.3 - 2023/01/19
+* Permit using nokogiri 1.14.0
+
 # Release v0.8.2 - 2022/09/26
 * in_windows_eventlog2: Skip to subscribe non existent channels, not to stop Fluentd
 
