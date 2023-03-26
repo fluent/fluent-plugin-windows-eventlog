@@ -69,7 +69,7 @@ Fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 
 **NOTE:** When `render_as_xml` as `true`, `fluent-plugin-parser-winevt_xml` plugin should be needed to parse XML rendered Windows EventLog string.
 
-**NOTE:** If you encountered CPU spike due to massively huge EventLog channel, `rate_limit` parameter may help you. Currently, this paramter can handle the multiples of 10 or -1(`Winevt::EventLog::Subscribe::RATE_INFINITE`).
+**NOTE:** If you encountered CPU or memory spike due to massively huge EventLog channel, `rate_limit` parameter may help you. This paramter can handle the multiples of 10 or -1(`Winevt::EventLog::Subscribe::RATE_INFINITE`).
 
 ### parameters
 
@@ -85,7 +85,7 @@ Fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 |`read_from_head`   | **Deprecated** (option) Start to read the entries from the oldest, not from when fluentd is started. Defaults to `false`.|
 |`read_existing_events` | (option) Read the entries which already exist before fluentd is started. Defaults to `false`.|
 |`render_as_xml` | (option) Render Windows EventLog as XML or Ruby Hash object directly. Defaults to `false`.|
-|`rate_limit`      | (option) Specify rate limit to consume EventLog. Default is `Winevt::EventLog::Subscribe::RATE_INFINITE`.|
+|`rate_limit`      | (option) Specify rate limit to consume EventLog. This is the approximate maximum number of records read per second. If more than this value is read in a second, this stops reading and waits until the next `read_interval`. This value must be a multiple of 10. Default is `-1`(`Winevt::EventLog::Subscribe::RATE_INFINITE`) and this means there is no upper limit. The log flow rate for setting this is approximately as follows: `rate_limit / read_interval [logs/second]` |
 |`preserve_qualifiers_on_hash`      | (option) When set up it as true, this plugin preserves "Qualifiers" and "EventID" keys. When set up it as false, this plugin calculates actual "EventID" from "Qualifiers" and removing "Qualifiers". Default is `false`.|
 |`read_all_channels`| (option) Read from all channels. Default is `false`|
 |`description_locale`| (option) Specify description locale. Default is `nil`. See also: [Supported locales](https://github.com/fluent-plugins-nursery/winevt_c#multilingual-description) |
