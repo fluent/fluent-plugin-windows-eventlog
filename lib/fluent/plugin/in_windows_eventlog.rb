@@ -49,7 +49,7 @@ module Fluent::Plugin
     end
 
     def configure(conf)
-      log.warn "in_windows_eventlog is deprecated. It will be removed in the future version."
+      log.warn "in_windows_eventlog is deprecated. It will be removed in the future version. Please use in_windows_eventlog2 bundled with this plugin instead."
       super
       @chs = @channels.map {|ch| ch.strip.downcase }.uniq
       if @chs.empty?
