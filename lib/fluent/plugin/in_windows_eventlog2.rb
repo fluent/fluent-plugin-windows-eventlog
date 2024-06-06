@@ -1,10 +1,16 @@
 require 'winevt'
 require 'fluent/plugin/input'
 require 'fluent/plugin'
-require_relative 'bookmark_sax_parser'
 
 module Fluent::Plugin
   class WindowsEventLog2Input < Input
+    begin
+      require_relative 'bookmark_sax_parser'
+      @@bookmark_parser_avaiable = true
+    rescue LoadError
+      @@bookmark_parser_avaiable = false
+    end
+
     Fluent::Plugin.register_input('windows_eventlog2', self)
 
     class ReconnectError < Fluent::UnrecoverableError; end
@@ -227,11 +233,16 @@ module Fluent::Plugin
     end
 
     def subscription(ch, read_existing_events, remote_session)
-      bookmarkXml = @bookmarks_storage.get(ch) || ""
       bookmark = nil
-      if bookmark_validator(bookmarkXml, ch)
-        bookmark = Winevt::EventLog::Bookmark.new(bookmarkXml)
+      bookmarkXml = @bookmarks_storage.get(ch) || ""
+      unless bookmarkXml.empty?
+        if bookmark_valid?(bookmarkXml, ch)
+          bookmark = Winevt::EventLog::Bookmark.new(bookmarkXml)
+        else
+          log.warn "This stored bookmark is incomplete for using. Referring `read_existing_events` parameter to subscribe: #{bookmarkXml}, channel: #{ch}"
+        end
       end
+
       subscribe = Winevt::EventLog::Subscribe.new
       subscribe.read_existing_events = read_existing_events
       begin
@@ -258,19 +269,26 @@ module Fluent::Plugin
       end
     end
 
-    def bookmark_validator(bookmarkXml, channel)
-      return false if bookmarkXml.empty?
+    def bookmark_valid?(bookmarkXml, channel)
+      if @@bookmark_parser_avaiable
+        bookmark_valid_strictly?(bookmarkXml, channel)
+      else
+        bookmarklist_is_not_empty?(bookmarkXml, channel)
+      end
+    end
 
+    def bookmark_valid_strictly?(bookmarkXml, channel)
       evtxml = WinevtBookmarkDocument.new
       parser = Nokogiri::XML::SAX::Parser.new(evtxml)
       parser.parse(bookmarkXml)
       result = evtxml.result
-      if !result.empty? && (result[:channel].downcase == channel.downcase) && result[:is_current]
-        true
-      else
-        log.warn "This stored bookmark is incomplete for using. Referring `read_existing_events` parameter to subscribe: #{bookmarkXml}, channel: #{channel}"
-        false
-      end
+      !result.empty? && (result[:channel].downcase == channel.downcase) && result[:is_current]
+    end
+
+    def bookmarklist_is_not_empty?(bookmarkXml, channel)
+      # Empty example: "<BookmarkList>\r\n</BookmarkList>"
+      # Not empty example: "<BookmarkList>\r\n  <Bookmark Channel='Setup' RecordId='777' IsCurrent='true'/>\r\n</BookmarkList>"
+      bookmarkXml.include?("Channel")
     end
 
     def escape_channel(ch)
