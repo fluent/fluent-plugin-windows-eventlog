@@ -176,6 +176,18 @@ class WindowsEventLog2InputTest < Test::Unit::TestCase
                                      ])
       end
     end
+
+    test "default parser should not be WinevtXMLparser" do
+      # Because it is not a mandatory dependency.
+      d = create_driver CONFIG
+      assert_equal 1, d.instance._parsers.size
+      assert_not_equal "Fluent::Plugin::WinevtXMLparser", d.instance._parsers.values.first.class.name
+    end
+
+    test "parser should be WinevtXMLparser if render_as_xml is enabled" do
+      d = create_driver XML_RENDERING_CONFIG
+      assert_equal Fluent::Plugin::WinevtXMLparser, d.instance.instance_variable_get(:@parser).class
+    end
   end
 
   data("Japanese"                => ["ja_JP", false],

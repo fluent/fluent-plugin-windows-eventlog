@@ -64,7 +64,7 @@ module Fluent::Plugin
     end
 
     config_section :parse do
-      config_set_default :@type, 'winevt_xml'
+      config_set_default :@type, 'windows_eventlog2_dummy'
       config_set_default :estimate_current_event, false
     end
 
@@ -122,7 +122,12 @@ module Fluent::Plugin
       @winevt_xml = false
       @parser = nil
       if @render_as_xml
-        @parser = parser_create
+        parser_config = @parser_configs.first
+        if parser_config["@type"] == "windows_eventlog2_dummy"
+          @parser = parser_create(usage: "parse_xml", type: "winevt_xml", conf: conf.elements("parse").first)
+        else
+          @parser = parser_create
+        end
         @winevt_xml = @parser.respond_to?(:winevt_xml?) && @parser.winevt_xml?
         class << self
           alias_method :on_notify, :on_notify_xml
@@ -406,5 +411,17 @@ module Fluent::Plugin
       key
     end
     ####
+  end
+
+  class WindowsEventLog2DummyParser < Parser
+    Fluent::Plugin.register_parser('windows_eventlog2_dummy', self)
+
+    def configure(conf)
+      super
+    end
+
+    def parse(text)
+      raise NotImplementedError, "This is a dummy parser for the default setting and can not be used actually."
+    end
   end
 end
