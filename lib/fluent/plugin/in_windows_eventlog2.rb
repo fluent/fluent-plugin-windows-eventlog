@@ -389,7 +389,7 @@ module Fluent::Plugin
             elsif parent_key.nil?
               record[to_key(key)] = value
             else
-              k = "#{parent_key}.#{to_key(key)}"
+              k = "#{parent_key}#{to_key(key)}" #Edited for Encore to remove "." between words
               record[k] = value
             end
           end
@@ -400,9 +400,8 @@ module Fluent::Plugin
       }
     end
 
-    def to_key(key)
-      key.downcase!
-      key.gsub!(' '.freeze, '_'.freeze)
+    def to_key(key) #Edited for Encore to remove key.downcase and '_' to camelcase
+      key.gsub!(' '.freeze, ''.freeze)
       key
     end
     ####
