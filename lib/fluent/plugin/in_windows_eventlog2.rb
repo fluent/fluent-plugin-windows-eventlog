@@ -360,12 +360,25 @@ module Fluent::Plugin
     RECORD_DELIMITER = "\r\n\t".freeze
     FIELD_DELIMITER = "\t\t".freeze
     NONE_FIELD_DELIMITER = "\t".freeze
+    SYSMON_DELIMITER = "\r\n".freeze
+
 
     def parse_desc(record)
       desc = record.delete("Description".freeze)
+      providername = record["ProviderName"]
       return if desc.nil?
-
       elems = desc.split(GROUP_DELIMITER)
+      elem2 = desc.split(SYSMON_DELIMITER)
+
+      if providername == "Microsoft-Windows-Sysmon"
+        elem2.each { |x|
+          key, value = x.split(":", 2)
+          sysmon_key = "custom"
+          parent_key = "#{sysmon_key}.#{to_key(key)}"
+          record[parent_key] = value
+        }
+      end
+
       record['DescriptionTitle'] = elems.shift
       previous_key = nil
       elems.each { |elem|
