@@ -17,9 +17,9 @@ module Fluent::Plugin
                "EventID"           => ["EventID",               :string],
                "Qualifiers"        => ["Qualifiers",            :string],
                "Level"             => ["Level",                 :string],
-               "Category"          => ["Task",                  :string],
+               "Category"          => ["Task",                  :string], # Edited
                "Opcode"            => ["Opcode",                :string],
-               "EventType"         => ["Keywords",              :string],
+               "EventType"         => ["Keywords",              :string], # Edited
                "TimeCreated"       => ["TimeCreated",           :string],
                "EventRecordID"     => ["EventRecordID",         :string],
                "ActivityID"        => ["ActivityID",            :string],
