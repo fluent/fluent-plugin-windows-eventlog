@@ -371,10 +371,9 @@ module Fluent::Plugin
       elem2 = desc.split(SYSMON_DELIMITER)
 
       if providername == "Microsoft-Windows-Sysmon"
-        elem2.each { |x|
+        elem2.each { |x| # Loop through each line of Sysmon event description, parsing the field name from the field value.
           key, value = x.split(":", 2)
-          sysmon_key = "custom"
-          parent_key = "#{sysmon_key}.#{to_key(key)}"
+          parent_key = "#{to_key(key)}"
           record[parent_key] = value
         }
       end
