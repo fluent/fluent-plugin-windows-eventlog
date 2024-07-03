@@ -40,6 +40,9 @@ module Fluent::Plugin
     config_param :read_from_head, :bool, default: false, deprecated: "Use `read_existing_events' instead."
     config_param :read_existing_events, :bool, default: false
     config_param :parse_description, :bool, default: false
+    config_param :description_prefix_word_delimiter, :string, default: "."
+    config_param :description_word_delimiter, :string, default: "_"
+    config_param :downcase_description_keys, :bool, default: true
     config_param :render_as_xml, :bool, default: false
     config_param :rate_limit, :integer, default: Winevt::EventLog::Subscribe::RATE_INFINITE
     config_param :preserve_qualifiers_on_hash, :bool, default: false
@@ -389,7 +392,7 @@ module Fluent::Plugin
             elsif parent_key.nil?
               record[to_key(key)] = value
             else
-              k = "#{parent_key}.#{to_key(key)}"
+              k = "#{parent_key}#{@description_prefix_word_delimiter}#{to_key(key)}"
               record[k] = value
             end
           end
@@ -401,8 +404,8 @@ module Fluent::Plugin
     end
 
     def to_key(key)
-      key.downcase!
-      key.gsub!(' '.freeze, '_'.freeze)
+      key = key.downcase! if @downcase_description_keys
+      key.gsub!(' '.freeze, @description_word_delimiter)
       key
     end
     ####
