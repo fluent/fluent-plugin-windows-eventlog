@@ -82,12 +82,17 @@ Fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 |`<parse>`          | Setting for `parser` plugin for parsing raw XML EventLog records. |
 |`parse_description`| (option) parse `description` field and set parsed result into the record. `Description` and `EventData` fields are removed|
 <<<<<<< HEAD
+<<<<<<< HEAD
 |`description_key_delimiter`| (option) (Only applicable if parse_description is true) Change the character placed between the parent_key and key. Set the value to "" for no delimiter. Defaults to `.` .|
 |`description_word_delimiter`| (option) (Only applicable if parse_description is true) Change the character placed between each word of the key. Set the value to "" for no delimiter. Defaults to `_` .|
 |`downcase_description_keys`| (option) (Only applicable if parse_description is true) Specify whether to downcase the keys that are parsed from the Description. Defaults to `true`.|
 =======
 |`description_prefix_word_delimeter`| (option) Change the character placed between the parent_key and key. Set the value to "" for no delimiter. Defaults to `.` .|
 |`description_word_delimeter`| (option) Change the character placed between each word of the key. Set the value to "" for no delimiter. Defaults to `_` .|
+=======
+|`description_prefix_word_delimiter`| (option) Change the character placed between the parent_key and key. Set the value to "" for no delimiter. Defaults to `.` .|
+|`description_word_delimiter`| (option) Change the character placed between each word of the key. Set the value to "" for no delimiter. Defaults to `_` .|
+>>>>>>> 3b74548 (Update README.md)
 |`downcase_description_keys`| (option) Specify whether to downcase the keys that are parsed from the Description. Defaults to `true`.|
 >>>>>>> e3c9935 (Edit README)
 |`read_from_head`   | **Deprecated** (option) Start to read the entries from the oldest, not from when fluentd is started. Defaults to `false`.|
