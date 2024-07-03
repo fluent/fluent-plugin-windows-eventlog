@@ -1,3 +1,6 @@
+# Release v0.8.4 - 2024/07/03
+* in_windows_eventlog2: Add description parsing options
+
 # Release v0.8.3 - 2023/01/19
 * Permit using nokogiri 1.14.0
 
