@@ -392,7 +392,7 @@ module Fluent::Plugin
             elsif parent_key.nil?
               record[to_key(key)] = value
             else
-              k = "#{parent_key}#{@description_prefix_word_delimiter}#{to_key(key)}"
+              k = "#{parent_key}#{@description_key_delimiter}#{to_key(key)}"
               record[k] = value
             end
           end
