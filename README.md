@@ -83,6 +83,7 @@ Fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 |`parse_description`| (option) parse `description` field and set parsed result into the record. `Description` and `EventData` fields are removed|
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 |`description_key_delimiter`| (option) (Only applicable if parse_description is true) Change the character placed between the parent_key and key. Set the value to "" for no delimiter. Defaults to `.` .|
 |`description_word_delimiter`| (option) (Only applicable if parse_description is true) Change the character placed between each word of the key. Set the value to "" for no delimiter. Defaults to `_` .|
 |`downcase_description_keys`| (option) (Only applicable if parse_description is true) Specify whether to downcase the keys that are parsed from the Description. Defaults to `true`.|
@@ -95,6 +96,11 @@ Fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 >>>>>>> 3b74548 (Update README.md)
 |`downcase_description_keys`| (option) Specify whether to downcase the keys that are parsed from the Description. Defaults to `true`.|
 >>>>>>> e3c9935 (Edit README)
+=======
+|`description_key_delimiter`| (option) (Only applicable if parse_description is true) Change the character placed between the parent_key and key. Set the value to "" for no delimiter. Defaults to `.` .|
+|`description_word_delimiter`| (option) (Only applicable if parse_description is true) Change the character placed between each word of the key. Set the value to "" for no delimiter. Defaults to `_` .|
+|`downcase_description_keys`| (option) (Only applicable if parse_description is true) Specify whether to downcase the keys that are parsed from the Description. Defaults to `true`.|
+>>>>>>> 0f7862c (Created a draft of the test for this feature.)
 |`read_from_head`   | **Deprecated** (option) Start to read the entries from the oldest, not from when fluentd is started. Defaults to `false`.|
 |`read_existing_events` | (option) Read the entries which already exist before fluentd is started. Defaults to `false`.|
 |`render_as_xml` | (option) Render Windows EventLog as XML or Ruby Hash object directly. Defaults to `false`.|
