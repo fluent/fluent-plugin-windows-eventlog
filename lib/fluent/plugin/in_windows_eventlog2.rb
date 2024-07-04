@@ -404,7 +404,7 @@ module Fluent::Plugin
     end
 
     def to_key(key)
-      key = key.downcase! if @downcase_description_keys
+      key.downcase! if @downcase_description_keys
       key.gsub!(' '.freeze, @description_word_delimiter)
       key
     end
