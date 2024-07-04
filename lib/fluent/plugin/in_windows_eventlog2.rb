@@ -40,7 +40,7 @@ module Fluent::Plugin
     config_param :read_from_head, :bool, default: false, deprecated: "Use `read_existing_events' instead."
     config_param :read_existing_events, :bool, default: false
     config_param :parse_description, :bool, default: false
-    config_param :description_prefix_word_delimiter, :string, default: "."
+    config_param :description_key_delimiter, :string, default: "."
     config_param :description_word_delimiter, :string, default: "_"
     config_param :downcase_description_keys, :bool, default: true
     config_param :render_as_xml, :bool, default: false
