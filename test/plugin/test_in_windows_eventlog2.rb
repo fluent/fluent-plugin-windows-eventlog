@@ -243,14 +243,14 @@ A user's local group membership was enumerated.\r\n\r\nSubject:\r\n\tSecurity ID
 DESC
     h = {"Description" => desc}
     expected = {"DescriptionTitle"                 => "A user's local group membership was enumerated.",
-                "SubjectSecurityId"                => "S-X-Y-XX-WWWWWW-VVVV",
+                "SubjectSecurityID"                => "S-X-Y-XX-WWWWWW-VVVV",
                 "SubjectAccountName"               => "Administrator",
                 "SubjectAccountDomain"             => "DESKTOP-FLUENTTEST",
-                "SubjectLogonId"                   => "0x3185B1",
-                "UserSecurityId"                   => "S-X-Y-XX-WWWWWW-VVVV",
+                "SubjectLogonID"                   => "0x3185B1",
+                "UserSecurityID"                   => "S-X-Y-XX-WWWWWW-VVVV",
                 "UserAccountName"                  => "Administrator",
                 "UserAccountDomain"                => "DESKTOP-FLUENTTEST",
-                "ProcessInformationProcessId"      => "0x50b8",
+                "ProcessInformationProcessID"      => "0x50b8",
                 "ProcessInformationProcessName"    => "C:\\msys64\\usr\\bin\\make.exe"}
     d.instance.parse_desc(h)
     assert_equal(expected, h)
