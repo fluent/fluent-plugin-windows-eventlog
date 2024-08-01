@@ -451,7 +451,7 @@ DESC
       service = Fluent::Plugin::EventService.new
       subscribe = Winevt::EventLog::Subscribe.new
 
-      omit "@parser.preserve_qualifiers does not respond" unless subscribe.respond_to?(:preserve_qualifiers?)
+      omit "subscribe.preserve_qualifiers? does not respond" unless subscribe.respond_to?(:preserve_qualifiers?)
 
       d.run(expect_emits: 1) do
         service.run
@@ -464,6 +464,70 @@ DESC
       assert_true(record.has_key?("Description"))
       assert_true(record.has_key?("EventData"))
       assert_true(record.has_key?("Qualifiers"))
+    end
+
+    def test_write_with_preserving_sid
+      require 'winevt'
+
+      d = create_driver(config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                    "render_as_xml" => false,
+                                                    'preserve_sid_on_hash' => true
+                                                   }, [
+                                         config_element("storage", "", {
+                                                          '@type' => 'local',
+                                                          'persistent' => false
+                                                        }),
+                                       ]))
+
+      service = Fluent::Plugin::EventService.new
+      subscribe = Winevt::EventLog::Subscribe.new
+
+      omit "subscribe.preserve_sid? does not respond" unless subscribe.respond_to?(:preserve_sid?)
+
+      d.run(expect_emits: 1) do
+        service.run
+      end
+
+      assert(d.events.length >= 1)
+      event = d.events.last
+      record = event.last
+
+      assert_true(record.has_key?("Description"))
+      assert_true(record.has_key?("EventData"))
+      assert_true(record.has_key?("UserID"))
+      assert_true(record.has_key?("User"))
+    end
+
+    def test_write_with_not_preserving_sid
+      require 'winevt'
+
+      d = create_driver(config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                    "render_as_xml" => false,
+                                                    'preserve_sid_on_hash' => false
+                                                   }, [
+                                         config_element("storage", "", {
+                                                          '@type' => 'local',
+                                                          'persistent' => false
+                                                        }),
+                                       ]))
+
+      service = Fluent::Plugin::EventService.new
+      subscribe = Winevt::EventLog::Subscribe.new
+
+      omit "subscribe.preserve_sid? does not respond" unless subscribe.respond_to?(:preserve_sid?)
+
+      d.run(expect_emits: 1) do
+        service.run
+      end
+
+      assert(d.events.length >= 1)
+      event = d.events.last
+      record = event.last
+
+      assert_true(record.has_key?("Description"))
+      assert_true(record.has_key?("EventData"))
+      assert_false(record.has_key?("UserID"))
+      assert_true(record.has_key?("User"))
     end
   end
 
