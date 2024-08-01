@@ -150,7 +150,7 @@ module Fluent::Plugin
       if @render_as_xml
         @keynames.delete('User')
       end
-      if  !@render_as_xml && !@preserve_sid_on_hash
+      if !@render_as_xml && !@preserve_sid_on_hash
         @keynames.delete('UserID')
       end
 
