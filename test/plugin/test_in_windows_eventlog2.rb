@@ -284,7 +284,7 @@ DESC
   end
 
   def test_write
-    d = create_driver
+    d = create_driver XML_RENDERING_CONFIG
 
     service = Fluent::Plugin::EventService.new
 
@@ -300,6 +300,7 @@ DESC
     assert_equal("65500", record["EventID"])
     assert_equal("4", record["Level"])
     assert_equal("fluent-plugins", record["ProviderName"])
+    assert_false(record.has_key?("User"))
   end
 
   CONFIG_WITH_NON_EXISTENT_CHANNEL = config_element("ROOT", "", {
@@ -345,6 +346,7 @@ DESC
     assert_equal("65500", record["EventID"])
     assert_equal("4", record["Level"])
     assert_equal("fluent-plugins", record["ProviderName"])
+    assert_true(record.has_key?("User"))
   end
 
 
@@ -406,6 +408,7 @@ DESC
     assert_equal("65500", record["EventID"])
     assert_equal("4", record["Level"])
     assert_equal("fluent-plugins", record["ProviderName"])
+    assert_true(record.has_key?("User"))
   end
 
   class HashRendered < self
