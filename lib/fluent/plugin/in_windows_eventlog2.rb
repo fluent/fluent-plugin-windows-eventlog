@@ -29,6 +29,7 @@ module Fluent::Plugin
                "Channel"           => ["Channel",               :string],
                "Computer"          => ["Computer",              :string],
                "UserID"            => ["UserID",                :string],
+               "User"              => ["User",                  :string],
                "Version"           => ["Version",               :string],
                "Description"       => ["Description",           :string],
                "EventData"         => ["EventData",             :array]}
@@ -43,6 +44,7 @@ module Fluent::Plugin
     config_param :render_as_xml, :bool, default: false
     config_param :rate_limit, :integer, default: Winevt::EventLog::Subscribe::RATE_INFINITE
     config_param :preserve_qualifiers_on_hash, :bool, default: false
+    config_param :preserve_sid_on_hash, :bool, default: true
     config_param :read_all_channels, :bool, default: false
     config_param :description_locale, :string, default: nil
     config_param :refresh_subscription_interval, :time, default: nil
@@ -142,6 +144,15 @@ module Fluent::Plugin
         @keynames.delete('Qualifiers')
       end
       @keynames.delete('EventData') if @parse_description
+      if @render_as_xml && !@preserve_sid_on_hash
+        raise Fluent::ConfigError, "preserve_sid_on_hash is effective with Hash object rendering(render_as_xml as false)."
+      end
+      if @render_as_xml
+        @keynames.delete('User')
+      end
+      if  !@render_as_xml && !@preserve_sid_on_hash
+        @keynames.delete('UserID')
+      end
 
       locale = Winevt::EventLog::Locale.new
       if @description_locale && unsupported_locale?(locale, @description_locale)
@@ -238,6 +249,9 @@ module Fluent::Plugin
         subscribe.subscribe(ch, event_query, bookmark, remote_session)
         if !@render_as_xml && @preserve_qualifiers_on_hash
           subscribe.preserve_qualifiers = @preserve_qualifiers_on_hash
+        end
+        if !@render_as_xml && !@preserve_sid_on_hash
+          subscribe.preserve_sid = @preserve_sid_on_hash
         end
       rescue Winevt::EventLog::Query::Error => e
         raise Fluent::ConfigError, "Invalid Bookmark XML is loaded. #{e}"
