@@ -238,6 +238,36 @@ DESC
     assert_equal(expected, h)
   end
 
+  def test_parse_desc_camelcase
+    d = create_driver(config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                  "parse_description" => true,
+                                                  "description_key_delimiter" => "",
+                                                  "description_word_delimiter" => "",
+                                                  "downcase_description_keys" => false
+                                                  }, [
+                                       config_element("storage", "", {
+                                                        '@type' => 'local',
+                                                        'persistent' => false
+                                                      }),
+                                     ]))
+    desc =<<-DESC
+A user's local group membership was enumerated.\r\n\r\nSubject:\r\n\tSecurity ID:\t\tS-X-Y-XX-WWWWWW-VVVV\r\n\tAccount Name:\t\tAdministrator\r\n\tAccount Domain:\t\tDESKTOP-FLUENTTEST\r\n\tLogon ID:\t\t0x3185B1\r\n\r\nUser:\r\n\tSecurity ID:\t\tS-X-Y-XX-WWWWWW-VVVV\r\n\tAccount Name:\t\tAdministrator\r\n\tAccount Domain:\t\tDESKTOP-FLUENTTEST\r\n\r\nProcess Information:\r\n\tProcess ID:\t\t0x50b8\r\n\tProcess Name:\t\tC:\\msys64\\usr\\bin\\make.exe
+DESC
+    h = {"Description" => desc}
+    expected = {"DescriptionTitle"                 => "A user's local group membership was enumerated.",
+                "SubjectSecurityID"                => "S-X-Y-XX-WWWWWW-VVVV",
+                "SubjectAccountName"               => "Administrator",
+                "SubjectAccountDomain"             => "DESKTOP-FLUENTTEST",
+                "SubjectLogonID"                   => "0x3185B1",
+                "UserSecurityID"                   => "S-X-Y-XX-WWWWWW-VVVV",
+                "UserAccountName"                  => "Administrator",
+                "UserAccountDomain"                => "DESKTOP-FLUENTTEST",
+                "ProcessInformationProcessID"      => "0x50b8",
+                "ProcessInformationProcessName"    => "C:\\msys64\\usr\\bin\\make.exe"}
+    d.instance.parse_desc(h)
+    assert_equal(expected, h)
+  end
+
   def test_parse_privileges_description
     d = create_driver
     desc = ["Special privileges assigned to new logon.\r\n\r\nSubject:\r\n\tSecurity ID:\t\tS-X-Y-ZZ\r\n\t",
