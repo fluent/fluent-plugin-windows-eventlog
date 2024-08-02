@@ -1,3 +1,9 @@
+# Release v0.9.0 - 2024/08/02
+* in_windows_eventlog2: Enable expanding user names from SID and add `preserve_sid_on_hash` option
+* in_windows_eventlog2: Add Delimiter and Casing options for parsing
+* in_windows_eventlog2: Not to load WinevtXMLparser by default
+* in_windows_eventlog2: Make it possible to work without Nokogiri
+
 # Release v0.8.3 - 2023/01/19
 * Permit using nokogiri 1.14.0
 
