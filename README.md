@@ -35,6 +35,7 @@ Fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
       render_as_xml false       # default is false.
       rate_limit 200            # default is -1(Winevt::EventLog::Subscribe::RATE_INFINITE).
       # preserve_qualifiers_on_hash true # default is false.
+      # preserve_sid_on_hash false # default is true.
       # read_all_channels false # default is false.
       # description_locale en_US # default is nil. It means that system locale is used for obtaining description.
       # refresh_subscription_interval 10m # default is nil. It specifies refresh interval for channel subscriptions.
@@ -86,6 +87,7 @@ Fluentd Input plugin for the Windows Event Log using newer Windows Event Logging
 |`render_as_xml` | (option) Render Windows EventLog as XML or Ruby Hash object directly. Defaults to `false`.|
 |`rate_limit`      | (option) Specify rate limit to consume EventLog. This is the approximate maximum number of records read per second. If more than this value is read in a second, this stops reading and waits until the next `read_interval`. This value must be a multiple of 10. Default is `-1`(`Winevt::EventLog::Subscribe::RATE_INFINITE`) and this means there is no upper limit. The log flow rate for setting this is approximately as follows: `rate_limit / read_interval [logs/second]` |
 |`preserve_qualifiers_on_hash`      | (option) When set up it as true, this plugin preserves "Qualifiers" and "EventID" keys. When set up it as false, this plugin calculates actual "EventID" from "Qualifiers" and removing "Qualifiers". Default is `false`.|
+|`preserve_sid_on_hash`      | (option) When set up it as true, this plugin preserves "UserID" key which includes SID of users. When set up it as false, this plugin just eliminates "UserID". This option is only effective for hash format (render_as_xml false) . Default is `true`.|
 |`read_all_channels`| (option) Read from all channels. Default is `false`|
 |`description_locale`| (option) Specify description locale. Default is `nil`. See also: [Supported locales](https://github.com/fluent-plugins-nursery/winevt_c#multilingual-description) |
 |`refresh_subscription_interval`|(option) It specifies refresh interval for channel subscriptions. Default is `nil`.|
