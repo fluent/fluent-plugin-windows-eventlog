@@ -1,3 +1,8 @@
+# Release v0.9.1 - 2024/02/17
+
+* Relax required Nokogiri version (#117)
+  This change permit 1.16 or later version of Nokogiri.
+
 # Release v0.9.0 - 2024/08/02
 * in_windows_eventlog2: Enable expanding user names from SID and add `preserve_sid_on_hash` option
 * in_windows_eventlog2: Add Delimiter and Casing options for parsing
