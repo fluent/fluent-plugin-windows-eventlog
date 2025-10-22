@@ -1,0 +1,14 @@
+A service was installed in the system.
+
+Subject:
+	Security ID:		SYSTEM
+	Account Name:		824ZWL3$
+	Account Domain:		WORKGROUP
+	Logon ID:		0x3E7
+
+Service Information:
+	Service Name: 		WpnUserService_a46b7
+	Service File Name:	C:\WINDOWS\system32\svchost.exe -k UnistackSvcGroup
+	Service Type: 		0xE0
+	Service Start Type:	2
+	Service Account: 	LocalSystem
