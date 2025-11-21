@@ -417,7 +417,7 @@ module Fluent::Plugin
                          r.split(NONE_FIELD_DELIMITER)
                        end
           key = "" if key.nil?
-          key.chop!  # remove ':' from key
+          key.sub!(/:\s*$/, '')  # remove ':' from key
           if value.nil?
             parent_key = to_key(key)
           else

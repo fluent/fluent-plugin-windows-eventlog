@@ -325,6 +325,27 @@ DESC
     assert_equal(expected, h)
   end
 
+  test "A service was installed in the system." do
+    d = create_driver
+    desc = nil
+    File.open('./test/data/eventid_4697', 'r') do |f|
+      desc = f.read.gsub(/\R/, "\r\n")
+    end
+    h = {"Description" => desc}
+    expected = {"DescriptionTitle"                       => "A service was installed in the system.",
+                "service_information.service_account"    => "LocalSystem",
+                "service_information.service_file_name"  => "C:\\WINDOWS\\system32\\svchost.exe -k UnistackSvcGroup",
+                "service_information.service_name"       => "WpnUserService_a46b7",
+                "service_information.service_start_type" => "2",
+                "service_information.service_type"       => "0xE0",
+                "subject.account_domain" => "WORKGROUP",
+                "subject.account_name"   => "824ZWL3$",
+                "subject.logon_id"       => "0x3E7",
+                "subject.security_id"    => "SYSTEM"}
+    d.instance.parse_desc(h)
+    assert_equal(expected, h)
+  end
+
   def test_write
     d = create_driver XML_RENDERING_CONFIG
 
