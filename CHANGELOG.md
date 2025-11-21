@@ -1,3 +1,7 @@
+# Release v0.9.2 - 2025/11/21
+
+* in_windows_eventlog2: remove unexpected spaces in parsing description (#121)
+
 # Release v0.9.1 - 2024/02/17
 
 * Relax required Nokogiri version (#117)
