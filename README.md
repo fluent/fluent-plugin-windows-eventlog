@@ -21,7 +21,7 @@ If you want to know about the obsolete one, please see [in_windows_eventlog(old)
 
 ## in_windows_eventlog2
 
-Fluentd Input plugin for the Windows Event Log using newer Windows Event Logging API. This is successor to [in_windows_eventlog](in_windows_eventlog(old).md). See also [this slide](https://www.slideshare.net/cosmo0920/fluentd-meetup-2019) for the details of `in_windows_eventlog2` plugin.
+Fluentd Input plugin for the Windows Event Log using newer Windows Event Logging API. This is successor to [in_windows_eventlog](in_windows_eventlog(old).md). See also [this slide](http://web.archive.org/web/20190822162241/https://www.slideshare.net/cosmo0920/fluentd-meetup-2019) for the details of `in_windows_eventlog2` plugin.
 
 ## Configuration
 
