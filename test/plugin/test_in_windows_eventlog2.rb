@@ -268,6 +268,111 @@ DESC
     assert_equal(expected, h)
   end
 
+  def test_parse_desc_keeps_event_metadata
+    d = create_driver(config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                  "parse_description" => true,
+                                                  "downcase_description_keys" => false
+                                                  }, [
+                                       config_element("storage", "", {
+                                                        '@type' => 'local',
+                                                        'persistent' => false
+                                                      }),
+                                     ]))
+    desc = [
+      "Creating Scriptblock text (1 of 1):",
+      "",
+      "Channel:\t\tSecurity",
+      "\tEventID:\t\t4624",
+      "\tComputer:\t\tDC01",
+    ].join("\r\n")
+    h = {"Channel"     => "Microsoft-Windows-PowerShell/Operational",
+         "EventID"     => "4104",
+         "Computer"    => "DESKTOP-FLUENTTEST",
+         "Description" => desc}
+    expected = {"Channel"          => "Microsoft-Windows-PowerShell/Operational",
+                "EventID"          => "4104",
+                "Computer"         => "DESKTOP-FLUENTTEST",
+                "DescriptionTitle" => "Creating Scriptblock text (1 of 1):"}
+    d.instance.parse_desc(h)
+    assert_equal(expected, h)
+  end
+
+  def test_parse_desc_keeps_the_first_value_of_a_duplicated_key
+    d = create_driver
+    desc = [
+      "Special privileges assigned to new logon.",
+      "",
+      "Subject:",
+      "\tAccount Name:\t\tAdministrator",
+      "",
+      "Subject:",
+      "\tAccount Name:\t\tSYSTEM",
+    ].join("\r\n")
+    h = {"Description" => desc}
+    expected = {"DescriptionTitle"     => "Special privileges assigned to new logon.",
+                "subject.account_name" => "Administrator"}
+    d.instance.parse_desc(h)
+    assert_equal(expected, h)
+  end
+
+  def test_parse_desc_does_not_merge_a_continuation_line_into_a_refused_key
+    d = create_driver
+    desc = [
+      "Special privileges assigned to new logon.",
+      "",
+      "Privileges:\t\tSeTcbPrivilege",
+      "",
+      "Privileges:\t\tSeDebugPrivilege",
+      "\t\tSeBackupPrivilege",
+    ].join("\r\n")
+    h = {"Description" => desc}
+    expected = {"DescriptionTitle" => "Special privileges assigned to new logon.",
+                "privileges"       => "SeTcbPrivilege"}
+    d.instance.parse_desc(h)
+    assert_equal(expected, h)
+  end
+
+  def test_parse_desc_does_not_merge_a_continuation_line_into_an_existing_key
+    d = create_driver
+    desc = [
+      "Special privileges assigned to new logon.",
+      "",
+      "Privileges:\t\tSeTcbPrivilege",
+      "",
+      "Privileges:",
+      "\t\tSeDebugPrivilege",
+    ].join("\r\n")
+    h = {"Description" => desc}
+    expected = {"DescriptionTitle" => "Special privileges assigned to new logon.",
+                "privileges"       => "SeTcbPrivilege"}
+    d.instance.parse_desc(h)
+    assert_equal(expected, h)
+  end
+
+  def test_parse_desc_keeps_event_metadata_reached_through_a_continuation_line
+    d = create_driver(config_element("ROOT", "", {"tag" => "fluent.eventlog",
+                                                  "parse_description" => true,
+                                                  "downcase_description_keys" => false
+                                                  }, [
+                                       config_element("storage", "", {
+                                                        '@type' => 'local',
+                                                        'persistent' => false
+                                                      }),
+                                     ]))
+    desc = [
+      "Creating Scriptblock text (1 of 1):",
+      "",
+      "Channel:",
+      "\t\t\tspoofed",
+    ].join("\r\n")
+    h = {"Channel"     => "Microsoft-Windows-PowerShell/Operational",
+         "Description" => desc}
+    expected = {"Channel"          => "Microsoft-Windows-PowerShell/Operational",
+                "DescriptionTitle" => "Creating Scriptblock text (1 of 1):"}
+    d.instance.parse_desc(h)
+    assert_equal(expected, h)
+  end
+
   def test_parse_desc_with_empty_field_value
     d = create_driver
     desc = [

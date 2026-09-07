@@ -39,6 +39,7 @@ module Fluent::Plugin
                "Version"           => ["Version",               :string],
                "Description"       => ["Description",           :string],
                "EventData"         => ["EventData",             :array]}
+    RESERVED_RECORD_KEYS = (KEY_MAP.keys + ["DescriptionTitle"]).freeze
 
     config_param :tag, :string
     config_param :read_interval, :time, default: 2
@@ -419,9 +420,10 @@ module Fluent::Plugin
           key = +"" if key.nil?
           key.sub!(/:\s*\z/, '')  # remove ':' from key
           k = parent_key.nil? ? to_key(key) : "#{parent_key}#{@description_key_delimiter}#{to_key(key)}"
+          taken = record.key?(k) || RESERVED_RECORD_KEYS.include?(k)
           if value.nil?
             unless key.empty?
-              previous_key = k
+              previous_key = taken ? nil : k
               parent_key = to_key(key)
             end
           else
@@ -432,6 +434,8 @@ module Fluent::Plugin
             # We should investigate whether an another case exists or not.
             if key.empty?
               record[previous_key] = [record[previous_key], value].flatten.reject {|e| e.nil?} if previous_key
+            elsif taken
+              previous_key = nil
             else
               record[k] = value
               previous_key = k
