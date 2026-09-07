@@ -1,3 +1,7 @@
+# Release v0.9.3 - 2026/09/07
+
+* in_windows_eventlog2: fix key handling in parse_desc (#135)
+
 # Release v0.9.2 - 2025/11/21
 
 * in_windows_eventlog2: remove unexpected spaces in parsing description (#121)
