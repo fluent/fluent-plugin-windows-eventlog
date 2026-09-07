@@ -268,6 +268,72 @@ DESC
     assert_equal(expected, h)
   end
 
+  def test_parse_desc_with_empty_field_value
+    d = create_driver
+    desc = [
+      "A service was installed in the system.",
+      "",
+      "Subject:",
+      "\tAccount Domain:\t\t",
+      "\tLogon ID:\t\t0x3E7",
+    ].join("\r\n")
+    h = {"Description" => desc}
+    expected = {"DescriptionTitle"       => "A service was installed in the system.",
+                "subject.account_domain" => "",
+                "subject.logon_id"       => "0x3E7"}
+    d.instance.parse_desc(h)
+    assert_equal(expected, h)
+  end
+
+  def test_parse_desc_with_an_empty_record_in_a_group
+    d = create_driver
+    desc = [
+      "A service was installed in the system.",
+      "",
+      "Subject:",
+      "\t",
+      "\tLogon ID:\t\t0x3E7",
+    ].join("\r\n")
+    h = {"Description" => desc}
+    expected = {"DescriptionTitle" => "A service was installed in the system.",
+                "subject.logon_id" => "0x3E7"}
+    d.instance.parse_desc(h)
+    assert_equal(expected, h)
+  end
+
+  def test_parse_desc_with_empty_field_value_after_a_single_tab
+    d = create_driver
+    desc = [
+      "A service was installed in the system.",
+      "",
+      "Subject:",
+      "\tService File Name:\t",
+      "\tLogon ID:\t\t0x3E7",
+    ].join("\r\n")
+    h = {"Description" => desc}
+    expected = {"DescriptionTitle"          => "A service was installed in the system.",
+                "subject.service_file_name" => "",
+                "subject.logon_id"          => "0x3E7"}
+    d.instance.parse_desc(h)
+    assert_equal(expected, h)
+  end
+
+  def test_parse_desc_merges_a_continuation_line_into_the_nested_key
+    d = create_driver
+    desc = [
+      "Special privileges assigned to new logon.",
+      "",
+      "Subject:",
+      "\tAccount Name:\t\tAdministrator",
+      "\t\tsecond-value",
+    ].join("\r\n")
+    h = {"Description" => desc}
+    expected = {"DescriptionTitle"     => "Special privileges assigned to new logon.",
+                "subject.account_name" => ["Administrator", "second-value"]}
+    d.instance.parse_desc(h)
+    assert_equal(expected, h)
+  end
+
   def test_parse_privileges_description
     d = create_driver
     desc = ["Special privileges assigned to new logon.\r\n\r\nSubject:\r\n\tSecurity ID:\t\tS-X-Y-ZZ\r\n\t",

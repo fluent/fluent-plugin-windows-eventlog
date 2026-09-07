@@ -412,30 +412,31 @@ module Fluent::Plugin
         parent_key = nil
         elem.split(RECORD_DELIMITER).each { |r|
           key, value = if r.index(FIELD_DELIMITER)
-                         r.split(FIELD_DELIMITER)
+                         r.split(FIELD_DELIMITER, -1)
                        else
-                         r.split(NONE_FIELD_DELIMITER)
+                         r.split(NONE_FIELD_DELIMITER, -1)
                        end
-          key = "" if key.nil?
-          key.sub!(/:\s*$/, '')  # remove ':' from key
+          key = +"" if key.nil?
+          key.sub!(/:\s*\z/, '')  # remove ':' from key
+          k = parent_key.nil? ? to_key(key) : "#{parent_key}#{@description_key_delimiter}#{to_key(key)}"
           if value.nil?
-            parent_key = to_key(key)
+            unless key.empty?
+              previous_key = k
+              parent_key = to_key(key)
+            end
           else
             # parsed value sometimes contain unexpected "\t". So remove it.
             value.strip!
             # merge empty key values into the previous non-empty key record.
+            # XXX: This is for empty privileges record key.
+            # We should investigate whether an another case exists or not.
             if key.empty?
-              record[previous_key] = [record[previous_key], value].flatten.reject {|e| e.nil?}
-            elsif parent_key.nil?
-              record[to_key(key)] = value
+              record[previous_key] = [record[previous_key], value].flatten.reject {|e| e.nil?} if previous_key
             else
-              k = "#{parent_key}#{@description_key_delimiter}#{to_key(key)}"
               record[k] = value
+              previous_key = k
             end
           end
-          # XXX: This is for empty privileges record key.
-          # We should investigate whether an another case exists or not.
-          previous_key = to_key(key) unless key.empty?
         }
       }
     end
