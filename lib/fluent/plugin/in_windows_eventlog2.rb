@@ -39,6 +39,7 @@ module Fluent::Plugin
                "Version"           => ["Version",               :string],
                "Description"       => ["Description",           :string],
                "EventData"         => ["EventData",             :array]}
+    RESERVED_RECORD_KEYS = (KEY_MAP.keys + ["DescriptionTitle"]).freeze
 
     config_param :tag, :string
     config_param :read_interval, :time, default: 2
@@ -412,30 +413,34 @@ module Fluent::Plugin
         parent_key = nil
         elem.split(RECORD_DELIMITER).each { |r|
           key, value = if r.index(FIELD_DELIMITER)
-                         r.split(FIELD_DELIMITER)
+                         r.split(FIELD_DELIMITER, -1)
                        else
-                         r.split(NONE_FIELD_DELIMITER)
+                         r.split(NONE_FIELD_DELIMITER, -1)
                        end
-          key = "" if key.nil?
-          key.sub!(/:\s*$/, '')  # remove ':' from key
+          key = +"" if key.nil?
+          key.sub!(/:\s*\z/, '')  # remove ':' from key
+          k = parent_key.nil? ? to_key(key) : "#{parent_key}#{@description_key_delimiter}#{to_key(key)}"
+          taken = record.key?(k) || RESERVED_RECORD_KEYS.include?(k)
           if value.nil?
-            parent_key = to_key(key)
+            unless key.empty?
+              previous_key = taken ? nil : k
+              parent_key = to_key(key)
+            end
           else
             # parsed value sometimes contain unexpected "\t". So remove it.
             value.strip!
             # merge empty key values into the previous non-empty key record.
+            # XXX: This is for empty privileges record key.
+            # We should investigate whether an another case exists or not.
             if key.empty?
-              record[previous_key] = [record[previous_key], value].flatten.reject {|e| e.nil?}
-            elsif parent_key.nil?
-              record[to_key(key)] = value
+              record[previous_key] = [record[previous_key], value].flatten.reject {|e| e.nil?} if previous_key
+            elsif taken
+              previous_key = nil
             else
-              k = "#{parent_key}#{@description_key_delimiter}#{to_key(key)}"
               record[k] = value
+              previous_key = k
             end
           end
-          # XXX: This is for empty privileges record key.
-          # We should investigate whether an another case exists or not.
-          previous_key = to_key(key) unless key.empty?
         }
       }
     end
